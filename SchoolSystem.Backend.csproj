@@ -29,4 +29,8 @@
     <ItemGroup>
         <ProjectReference Include="..\SchoolSystem.Domain\SchoolSystem.Domain.csproj"/>
     </ItemGroup>
+
+    <ItemGroup>
+        <Folder Include="Template\"/>
+    </ItemGroup>
 </Project>

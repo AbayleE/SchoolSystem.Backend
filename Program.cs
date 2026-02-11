@@ -4,8 +4,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using SchoolSystem.Backend.Data;
-using SchoolSystem.Backend.Services.TenantService;
-using SchoolSystem.Backend.Services.UserService.cs;
+using SchoolSystem.Backend.Interface;
+using SchoolSystem.Backend.Services;
+using SchoolSystem.Backend.Services.AuthService;
+using SchoolSystem.Backend.Services.BaseService;
+using SchoolSystem.Backend.Services.EmailService;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -64,8 +67,28 @@ builder.Services.AddDbContext<SchoolDbContext>(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<ITenantService, TenantService>();
+// Base
+builder.Services.AddScoped(typeof(BaseRepository<>));
+builder.Services.AddScoped(typeof(BaseService<>));
+
+// CRUD services
+builder.Services.AddScoped<TeacherService>();
+builder.Services.AddScoped<StudentService>();
+builder.Services.AddScoped<ParentService>();
+builder.Services.AddScoped<SubjectService>();
+builder.Services.AddScoped<ClassService>();
+builder.Services.AddScoped<GradeService>();
+builder.Services.AddScoped<EnrollmentService>();
+builder.Services.AddScoped<NotificationService>();
+builder.Services.AddScoped<TenantService>();
+
+// Workflow services
+builder.Services.AddScoped<InvitationService>();
+builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+
+// Email + Notification dependencies
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 
 var app = builder.Build();

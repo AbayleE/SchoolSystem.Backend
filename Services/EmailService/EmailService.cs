@@ -28,7 +28,7 @@ public class EmailService(IConfiguration config, Logger<IEmailService> logger) :
 
         var message = new MailMessage
         {
-            From = new MailAddress(smtpSettings["From"]),
+            From = new MailAddress(smtpSettings["From"] ?? throw new InvalidOperationException("Email address is missing")),
             Subject = "Your School System Invitation",
             Body =
                 $"You have been invited.\n\nToken: {invitation.Token}\n\nUse this link to register:\nhttp://localhost:5275/swagger/register?token={invitation.Token}",

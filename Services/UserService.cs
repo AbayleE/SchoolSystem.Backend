@@ -2,12 +2,14 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using SchoolSystem.Backend.Data;
 using SchoolSystem.Backend.DTOs.Users;
+using SchoolSystem.Backend.Services.BaseService;
 using SchoolSystem.Domain.Entities;
 using SchoolSystem.Domain.Enums;
 
-namespace SchoolSystem.Backend.Services.UserService.cs;
+namespace SchoolSystem.Backend.Services;
 
-public class UserService(SchoolDbContext context, ILogger<UserService> logger) : IUserService
+public class UserService(SchoolDbContext context, ILogger<UserService> logger, BaseRepository<User> repo)
+    : BaseService<User>(repo)
 {
     private readonly PasswordHasher<User> _passwordHasher = new();
 

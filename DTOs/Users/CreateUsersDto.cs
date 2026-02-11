@@ -1,13 +1,13 @@
-using SchoolSystem.Domain.valueObject;
+using SchoolSystem.Domain.ValueObjects;
 
 namespace SchoolSystem.Backend.DTOs.Users;
 
-public class CreateUserDto
+public abstract class CreateUserDto
 {
-    public Guid TenantId { get; set; }
-    public FullName Name { get; set; }
-    public string Email { get; set; }
-    public string Phone { get; set; }
-    public string Password { get; set; }
-    public string Role { get; set; }
+    public required Guid TenantId { get; set; }
+    public required FullName Name { get; set; }
+    public required string Email { get; set; }
+    public string? Phone { get; set; }
+    public required string Password { get; set; }
+    public required string Role { get; set; }
 }

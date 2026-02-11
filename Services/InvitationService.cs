@@ -2,16 +2,18 @@ using Microsoft.EntityFrameworkCore;
 using SchoolSystem.Backend.Data;
 using SchoolSystem.Backend.DTOs.Invitations;
 using SchoolSystem.Backend.Interface;
+using SchoolSystem.Backend.Services.BaseService;
 using SchoolSystem.Domain.Entities;
 using SchoolSystem.Domain.Enums;
 
-namespace SchoolSystem.Backend.Services.InvitationService;
+namespace SchoolSystem.Backend.Services;
 
 public class InvitationService(
     SchoolDbContext context,
     IEmailService emailService,
-    INotificationService notificationService,
-    Logger<IInvitationService> logger) : IInvitationService
+    NotificationService notificationService,
+    Logger<InvitationService> logger,
+    BaseRepository<Invitation> repo) : BaseService<Invitation>(repo)
 {
     public async Task<Invitation> CreateInvitationAsync(CreateInvitationDto dto)
     {
@@ -52,12 +54,6 @@ public class InvitationService(
             .FirstOrDefaultAsync(i => i.Token == token && !i.Used && i.ExpiresAt > DateTime.UtcNow);
     }
 
-    public async Task<Invitation?> GetInvitationByIdAsync(Guid id)
-    {
-        logger.LogInformation("Getting invitation by id {id}", id);
-        return await context.Invitations
-            .FirstOrDefaultAsync(i => i.Id == id);
-    }
 
     public async Task<List<Invitation>> GetInvitationsByTenantAsync(Guid id)
     {

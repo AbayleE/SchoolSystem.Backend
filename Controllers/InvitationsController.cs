@@ -2,13 +2,13 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SchoolSystem.Backend.DTOs.Invitations;
-using SchoolSystem.Backend.Interface;
+using SchoolSystem.Backend.Services;
 
 namespace SchoolSystem.Backend.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class InvitationsController(IInvitationService invitationService) : ControllerBase
+public class InvitationsController(InvitationService invitationService) : ControllerBase
 {
     [HttpPost]
     [Authorize(Roles = "SchoolAdmin,Manager,SystemOwner")]

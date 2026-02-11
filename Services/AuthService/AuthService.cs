@@ -7,7 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 using SchoolSystem.Backend.Data;
 using SchoolSystem.Backend.DTOs.Auth;
 using SchoolSystem.Domain.Entities;
-using SchoolSystem.Domain.valueObject;
+using SchoolSystem.Domain.ValueObjects;
 
 namespace SchoolSystem.Backend.Services.AuthService;
 
@@ -20,25 +20,17 @@ public class AuthService(
     public async Task<AuthResponseDto> LoginAsync(LoginDto dto)
     {
         var user = await context.Users
-            .FirstOrDefaultAsync(u => u.Email == dto.Email);
+            .FirstOrDefaultAsync(u => u.Email == dto.Email) ?? throw new Exception("Invalid credentials");
 
-        if (user == null)
-            throw new Exception("Invalid credentials");
-
-        var result = passwordHasher.VerifyHashedPassword(user, user.PasswordHash, dto.Password);
-
-        if (result == PasswordVerificationResult.Failed)
-            throw new Exception("Invalid credentials");
-
-        var token = GenerateJwtToken(user);
-
-        return new AuthResponseDto
+        if (user.PasswordHash != null)
         {
-            Token = token,
-            UserId = user.Id,
-            Role = user.Role,
-            TenantId = user.TenantId
-        };
+            var result = passwordHasher.VerifyHashedPassword(user, user.PasswordHash, dto.Password);
+
+            if (result == PasswordVerificationResult.Failed)
+                throw new Exception("Invalid credentials");
+        }
+
+        return BuildAuthResponse(user);
     }
 
     public async Task<AuthResponseDto> RegisterWithInvitationAsync(RegisterWithInvitationDto dto)
@@ -66,7 +58,13 @@ public class AuthService(
 
         await context.SaveChangesAsync();
 
+        return BuildAuthResponse(user);
+    }
+
+    private AuthResponseDto BuildAuthResponse(User user)
+    {
         var token = GenerateJwtToken(user);
+
         return new AuthResponseDto
         {
             Token = token,
@@ -76,12 +74,18 @@ public class AuthService(
         };
     }
 
+
     private string GenerateJwtToken(User user)
     {
+        logger.LogInformation("Generating jwt token");
+        
         var jwtSettings = config.GetSection("Jwt");
         var jwtKey =
             Encoding.UTF8.GetBytes(jwtSettings["Key"] ?? throw new InvalidOperationException("JWT Key not found"));
         var key = new SymmetricSecurityKey(jwtKey);
+
+        if (user.Email == null)
+            throw new InvalidOperationException("Email not set");
 
         var claims = new List<Claim>
         {
@@ -90,6 +94,7 @@ public class AuthService(
             new(ClaimTypes.Role, user.Role.ToString()),
             new(ClaimTypes.Email, user.Email)
         };
+
 
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
         var expiresIn = int.Parse(jwtSettings["ExpiresInMinutes"] ?? "60");
@@ -101,6 +106,8 @@ public class AuthService(
             expires: DateTime.UtcNow.AddMinutes(expiresIn),
             signingCredentials: creds
         );
+        
+        logger.LogInformation("JWT token generated for user {UserId}", user.Id);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
