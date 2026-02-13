@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SchoolSystem.Backend.Data;
 using SchoolSystem.Backend.DTOs.Invitations;
-using SchoolSystem.Backend.Interface;
 using SchoolSystem.Backend.Services.BaseService;
 using SchoolSystem.Domain.Entities;
 using SchoolSystem.Domain.Enums;
@@ -10,9 +9,9 @@ namespace SchoolSystem.Backend.Services;
 
 public class InvitationService(
     SchoolDbContext context,
-    IEmailService emailService,
+    EmailService emailService,
     NotificationService notificationService,
-    Logger<InvitationService> logger,
+    ILogger<InvitationService> logger,
     BaseRepository<Invitation> repo) : BaseService<Invitation>(repo)
 {
     public async Task<Invitation> CreateInvitationAsync(CreateInvitationDto dto)
@@ -20,8 +19,8 @@ public class InvitationService(
         var token = Guid.NewGuid().ToString("N");
 
         var sender = await context.Users.FirstOrDefaultAsync(u => u.Id == dto.SenderId);
-        if (sender?.Email == null)
-            throw new Exception("Sender email not found");
+        if ( sender == null || sender.Email == null )
+            throw new Exception("Sender not found");
 
         var invitation = new Invitation
         {
@@ -40,7 +39,7 @@ public class InvitationService(
         context.Invitations.Add(invitation);
         await context.SaveChangesAsync();
 
-        await emailService.SendInvitationEmailAsync(sender.Email, invitation);
+       // await emailService.SendInvitationEmailAsync(sender.Email, invitation);
         // await notificationService.CreateInvitationNotificationAsync(invitation);
 
         return invitation;

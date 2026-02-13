@@ -22,14 +22,81 @@ namespace SchoolSystem.Backend.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("SchoolSystem.Domain.Entities.AcademicYear", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsCurrent")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("YearName")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AcademicYears");
+                });
+
             modelBuilder.Entity("SchoolSystem.Domain.Entities.Application", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("GradeApplied")
-                        .IsRequired()
+                    b.Property<Guid>("AcademicYearId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CurrentGradeLevel")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Gpa")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("GradeAppliedIDd")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Parent2Email")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Parent2Phone")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ParentEmail")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ParentPhone")
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("ReviewedAt")
@@ -38,14 +105,14 @@ namespace SchoolSystem.Backend.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
-                    b.Property<Guid>("StudentId")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTime>("SubmittedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
@@ -61,17 +128,39 @@ namespace SchoolSystem.Backend.Migrations
                     b.Property<Guid>("ApplicationId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FileName")
+                        .HasColumnType("text");
+
+                    b.Property<long>("FileSize")
+                        .HasColumnType("bigint");
+
                     b.Property<int>("FileType")
                         .HasColumnType("integer");
 
                     b.Property<string>("FileUrl")
-                        .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("ApplicationId");
 
                     b.ToTable("ApplicationDocuments");
                 });
@@ -82,16 +171,29 @@ namespace SchoolSystem.Backend.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("GradeLevel")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<Guid>("AcademicYearId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("GradeLevelId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Name")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
@@ -110,11 +212,23 @@ namespace SchoolSystem.Backend.Migrations
                     b.Property<Guid>("ClassId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
                     b.Property<Guid>("StudentId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
@@ -127,8 +241,23 @@ namespace SchoolSystem.Backend.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FileName")
+                        .HasColumnType("text");
+
+                    b.Property<long>("FileSize")
+                        .HasColumnType("bigint");
+
                     b.Property<int>("FileType")
                         .HasColumnType("integer");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
 
                     b.Property<Guid?>("RelatedEntityId")
                         .HasColumnType("uuid");
@@ -136,8 +265,10 @@ namespace SchoolSystem.Backend.Migrations
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Url")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");
@@ -150,6 +281,18 @@ namespace SchoolSystem.Backend.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<Guid>("AcademicYearId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
 
                     b.Property<double>("Score")
                         .HasColumnType("double precision");
@@ -169,6 +312,9 @@ namespace SchoolSystem.Backend.Migrations
                     b.Property<Guid>("TermId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.HasKey("Id");
 
                     b.ToTable("Grades");
@@ -180,15 +326,26 @@ namespace SchoolSystem.Backend.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Email")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime>("ExpiresAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
                     b.Property<int>("Role")
                         .HasColumnType("integer");
+
+                    b.Property<string>("SendByEmail")
+                        .HasColumnType("text");
 
                     b.Property<int>("SentByRole")
                         .HasColumnType("integer");
@@ -200,8 +357,10 @@ namespace SchoolSystem.Backend.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("Token")
-                        .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<bool>("Used")
                         .HasColumnType("boolean");
@@ -218,11 +377,16 @@ namespace SchoolSystem.Backend.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("Body")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
 
                     b.Property<DateTime?>("ReadAt")
                         .HasColumnType("timestamp with time zone");
@@ -231,11 +395,13 @@ namespace SchoolSystem.Backend.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("Title")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<int>("Type")
                         .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
@@ -243,6 +409,67 @@ namespace SchoolSystem.Backend.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Notifications");
+                });
+
+            modelBuilder.Entity("SchoolSystem.Domain.Entities.Parent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Parents");
+                });
+
+            modelBuilder.Entity("SchoolSystem.Domain.Entities.SchoolSettings", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AcademicCalendarType")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("GradingSystem")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SchoolSettings");
                 });
 
             modelBuilder.Entity("SchoolSystem.Domain.Entities.Student", b =>
@@ -254,21 +481,34 @@ namespace SchoolSystem.Backend.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTime>("DOB")
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("Dob")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Gender")
-                        .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid>("ParentId")
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("ParentId1")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ParentId2")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Status")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
@@ -283,19 +523,66 @@ namespace SchoolSystem.Backend.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("Code")
-                        .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Name")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.HasKey("Id");
 
                     b.ToTable("Subjects");
+                });
+
+            modelBuilder.Entity("SchoolSystem.Domain.Entities.SystemSettings", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("EnableEmailInvitations")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("EnablePayments")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("EnableSmsNotifications")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("LastUpdated")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("MaxTenants")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MaxUsersPerTenant")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("PlatformName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SupportEmail")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SystemSettings");
                 });
 
             modelBuilder.Entity("SchoolSystem.Domain.Entities.Tenant", b =>
@@ -308,20 +595,52 @@ namespace SchoolSystem.Backend.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("LogoUrl")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Name")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Subdomain")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");
 
                     b.ToTable("Tenants");
+                });
+
+            modelBuilder.Entity("SchoolSystem.Domain.Entities.Term", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AcademicYearId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("text");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Terms");
                 });
 
             modelBuilder.Entity("SchoolSystem.Domain.Entities.TranscriptRequest", b =>
@@ -330,8 +649,20 @@ namespace SchoolSystem.Backend.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("AcademicYearId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("CompletedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
 
                     b.Property<DateTime>("RequestedAt")
                         .HasColumnType("timestamp with time zone");
@@ -344,6 +675,9 @@ namespace SchoolSystem.Backend.Migrations
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
@@ -359,16 +693,19 @@ namespace SchoolSystem.Backend.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Email")
-                        .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("PasswordHash")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Phone")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<int>("Role")
@@ -377,59 +714,150 @@ namespace SchoolSystem.Backend.Migrations
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.HasKey("Id");
 
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("SchoolSystem.Domain.Entities.Student", b =>
+            modelBuilder.Entity("SchoolSystem.Domain.Entities.Application", b =>
                 {
-                    b.OwnsOne("SchoolSystem.Domain.valueObject.FullName", "Name", b1 =>
+                    b.OwnsOne("SchoolSystem.Domain.ValueObjects.Address", "Address", b1 =>
                         {
-                            b1.Property<Guid>("StudentId")
+                            b1.Property<Guid>("ApplicationId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("City")
+                                .HasColumnType("text");
+
+                            b1.Property<string>("HouseNumber")
+                                .HasColumnType("text");
+
+                            b1.Property<string>("Region")
+                                .HasColumnType("text");
+
+                            b1.Property<string>("SubCity")
+                                .HasColumnType("text");
+
+                            b1.Property<string>("Woreda")
+                                .HasColumnType("text");
+
+                            b1.HasKey("ApplicationId");
+
+                            b1.ToTable("Applications");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ApplicationId");
+                        });
+
+                    b.OwnsOne("SchoolSystem.Domain.ValueObjects.FullName", "Parent2Name", b1 =>
+                        {
+                            b1.Property<Guid>("ApplicationId")
                                 .HasColumnType("uuid");
 
                             b1.Property<string>("First")
-                                .IsRequired()
                                 .HasColumnType("text");
 
                             b1.Property<string>("Last")
-                                .IsRequired()
                                 .HasColumnType("text");
 
                             b1.Property<string>("Middle")
-                                .IsRequired()
                                 .HasColumnType("text");
 
-                            b1.HasKey("StudentId");
+                            b1.HasKey("ApplicationId");
 
-                            b1.ToTable("Students");
+                            b1.ToTable("Applications");
 
                             b1.WithOwner()
-                                .HasForeignKey("StudentId");
+                                .HasForeignKey("ApplicationId");
                         });
 
-                    b.Navigation("Name")
+                    b.OwnsOne("SchoolSystem.Domain.ValueObjects.FullName", "ParentName", b1 =>
+                        {
+                            b1.Property<Guid>("ApplicationId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("First")
+                                .HasColumnType("text");
+
+                            b1.Property<string>("Last")
+                                .HasColumnType("text");
+
+                            b1.Property<string>("Middle")
+                                .HasColumnType("text");
+
+                            b1.HasKey("ApplicationId");
+
+                            b1.ToTable("Applications");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ApplicationId");
+                        });
+
+                    b.OwnsOne("SchoolSystem.Domain.ValueObjects.FullName", "StudentName", b1 =>
+                        {
+                            b1.Property<Guid>("ApplicationId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("First")
+                                .HasColumnType("text");
+
+                            b1.Property<string>("Last")
+                                .HasColumnType("text");
+
+                            b1.Property<string>("Middle")
+                                .HasColumnType("text");
+
+                            b1.HasKey("ApplicationId");
+
+                            b1.ToTable("Applications");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ApplicationId");
+                        });
+
+                    b.Navigation("Address");
+
+                    b.Navigation("Parent2Name");
+
+                    b.Navigation("ParentName");
+
+                    b.Navigation("StudentName");
+                });
+
+            modelBuilder.Entity("SchoolSystem.Domain.Entities.ApplicationDocument", b =>
+                {
+                    b.HasOne("SchoolSystem.Domain.Entities.Application", "Application")
+                        .WithMany()
+                        .HasForeignKey("ApplicationId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Application");
                 });
 
             modelBuilder.Entity("SchoolSystem.Domain.Entities.User", b =>
                 {
-                    b.OwnsOne("SchoolSystem.Domain.valueObject.FullName", "Name", b1 =>
+                    b.OwnsOne("SchoolSystem.Domain.ValueObjects.Address", "Address", b1 =>
                         {
                             b1.Property<Guid>("UserId")
                                 .HasColumnType("uuid");
 
-                            b1.Property<string>("First")
-                                .IsRequired()
+                            b1.Property<string>("City")
                                 .HasColumnType("text");
 
-                            b1.Property<string>("Last")
-                                .IsRequired()
+                            b1.Property<string>("HouseNumber")
                                 .HasColumnType("text");
 
-                            b1.Property<string>("Middle")
-                                .IsRequired()
+                            b1.Property<string>("Region")
+                                .HasColumnType("text");
+
+                            b1.Property<string>("SubCity")
+                                .HasColumnType("text");
+
+                            b1.Property<string>("Woreda")
                                 .HasColumnType("text");
 
                             b1.HasKey("UserId");
@@ -440,8 +868,31 @@ namespace SchoolSystem.Backend.Migrations
                                 .HasForeignKey("UserId");
                         });
 
-                    b.Navigation("Name")
-                        .IsRequired();
+                    b.OwnsOne("SchoolSystem.Domain.ValueObjects.FullName", "Name", b1 =>
+                        {
+                            b1.Property<Guid>("UserId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("First")
+                                .HasColumnType("text");
+
+                            b1.Property<string>("Last")
+                                .HasColumnType("text");
+
+                            b1.Property<string>("Middle")
+                                .HasColumnType("text");
+
+                            b1.HasKey("UserId");
+
+                            b1.ToTable("Users");
+
+                            b1.WithOwner()
+                                .HasForeignKey("UserId");
+                        });
+
+                    b.Navigation("Address");
+
+                    b.Navigation("Name");
                 });
 #pragma warning restore 612, 618
         }

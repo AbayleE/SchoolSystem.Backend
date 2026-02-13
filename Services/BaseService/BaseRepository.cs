@@ -1,31 +1,40 @@
 using Microsoft.EntityFrameworkCore;
-using SchoolSystem.Backend.Data;
+using SchoolSystem.Backend.Interface;
+using SchoolSystem.Domain.Interfaces;
 
 namespace SchoolSystem.Backend.Services.BaseService;
 
-public abstract class BaseRepository<TEntity>(SchoolDbContext context)
-    where TEntity : class
+public class BaseRepository<TEntity>(DbContext context, ITenantContext tenant)
+    where TEntity : class, IEntity, IHasTenant
 {
-    public async Task<TEntity?> GetByIdAsync(Guid id)
+    private readonly DbSet<TEntity> _dbSet = context.Set<TEntity>();
+
+    public Task<TEntity?> GetByIdAsync(Guid id)
     {
-        return await context.Set<TEntity>().FindAsync(id);
+        return _dbSet
+            .Where(x => x.Id == id && x.TenantId == tenant.TenantId)
+            .FirstOrDefaultAsync();
     }
 
-    public async Task<List<TEntity>> GetAllAsync()
+    public Task<List<TEntity>> GetAllAsync()
     {
-        return await context.Set<TEntity>().ToListAsync();
+        return _dbSet
+            .Where(x => x.TenantId == tenant.TenantId)
+            .ToListAsync();
     }
 
     public async Task<TEntity> AddAsync(TEntity entity)
     {
-        context.Set<TEntity>().Add(entity);
+        entity.TenantId = tenant.TenantId;
+        await _dbSet.AddAsync(entity);
         await context.SaveChangesAsync();
         return entity;
     }
 
     public async Task<TEntity> UpdateAsync(TEntity entity)
     {
-        context.Set<TEntity>().Update(entity);
+        entity.TenantId = tenant.TenantId;
+        _dbSet.Update(entity);
         await context.SaveChangesAsync();
         return entity;
     }
@@ -35,7 +44,7 @@ public abstract class BaseRepository<TEntity>(SchoolDbContext context)
         var entity = await GetByIdAsync(id);
         if (entity == null) return false;
 
-        context.Set<TEntity>().Remove(entity);
+        _dbSet.Remove(entity);
         await context.SaveChangesAsync();
         return true;
     }

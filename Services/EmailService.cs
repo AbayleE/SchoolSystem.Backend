@@ -1,11 +1,10 @@
 ﻿using System.Net;
 using System.Net.Mail;
-using SchoolSystem.Backend.Interface;
 using SchoolSystem.Domain.Entities;
 
-namespace SchoolSystem.Backend.Services.EmailService;
+namespace SchoolSystem.Backend.Services;
 
-public class EmailService(IConfiguration config, Logger<IEmailService> logger) : IEmailService
+public class EmailService(IConfiguration config, ILogger<EmailService> logger)
 {
     public Task SendEmailAsync(string email, string subject, string message)
     {
@@ -28,7 +27,8 @@ public class EmailService(IConfiguration config, Logger<IEmailService> logger) :
 
         var message = new MailMessage
         {
-            From = new MailAddress(smtpSettings["From"] ?? throw new InvalidOperationException("Email address is missing")),
+            From = new MailAddress(smtpSettings["From"] ??
+                                   throw new InvalidOperationException("Email address is missing")),
             Subject = "Your School System Invitation",
             Body =
                 $"You have been invited.\n\nToken: {invitation.Token}\n\nUse this link to register:\nhttp://localhost:5275/swagger/register?token={invitation.Token}",

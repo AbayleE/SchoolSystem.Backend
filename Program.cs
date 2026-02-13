@@ -1,5 +1,6 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -8,32 +9,38 @@ using SchoolSystem.Backend.Interface;
 using SchoolSystem.Backend.Services;
 using SchoolSystem.Backend.Services.AuthService;
 using SchoolSystem.Backend.Services.BaseService;
-using SchoolSystem.Backend.Services.EmailService;
+using SchoolSystem.Domain.Entities;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// ---------------------------------------------------------
+// JWT Authentication
+// ---------------------------------------------------------
 var jwtSetting = builder.Configuration.GetSection("Jwt");
-var key = Encoding.UTF8.GetBytes(jwtSetting["Key"] ?? throw new InvalidOperationException("JWT key not set"));
+var key = Encoding.UTF8.GetBytes(jwtSetting["Key"]!);
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
     {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = jwtSetting["Issuer"],
-        ValidAudience = jwtSetting["Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(key)
-    };
-});
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtSetting["Issuer"],
+            ValidAudience = jwtSetting["Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(key)
+        };
+    });
 
+// ---------------------------------------------------------
+// Swagger + JWT Support
+// ---------------------------------------------------------
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "SchoolSystem API", Version = "v1" });
 
-    // Add JWT Authentication to Swagger
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -60,44 +67,79 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-builder.Services.AddControllers();
+// ---------------------------------------------------------
+// DbContext
+// ---------------------------------------------------------
 builder.Services.AddDbContext<SchoolDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+// CRITICAL: BaseRepository needs DbContext, not SchoolDbContext
+builder.Services.AddScoped<DbContext, SchoolDbContext>();
 
-// Base
+// ---------------------------------------------------------
+// Tenant Context
+// ---------------------------------------------------------
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ITenantContext, TenantContext>();
+
+// ---------------------------------------------------------
+// Generic Repository + Service
+// ---------------------------------------------------------
 builder.Services.AddScoped(typeof(BaseRepository<>));
 builder.Services.AddScoped(typeof(BaseService<>));
 
-// CRUD services
-builder.Services.AddScoped<TeacherService>();
+// ---------------------------------------------------------
+// Tenant-scoped CRUD Services
+// ---------------------------------------------------------
 builder.Services.AddScoped<StudentService>();
+builder.Services.AddScoped<TeacherService>();
 builder.Services.AddScoped<ParentService>();
 builder.Services.AddScoped<SubjectService>();
 builder.Services.AddScoped<ClassService>();
 builder.Services.AddScoped<GradeService>();
 builder.Services.AddScoped<EnrollmentService>();
 builder.Services.AddScoped<NotificationService>();
-builder.Services.AddScoped<TenantService>();
-
-// Workflow services
 builder.Services.AddScoped<InvitationService>();
 builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<ApplicationService>();
+builder.Services.AddScoped<ApplicationDocumentService>();
+builder.Services.AddScoped<FileResourceService>();
+builder.Services.AddScoped<TranscriptRequestService>();
+builder.Services.AddScoped<AcademicYearService>();
+builder.Services.AddScoped<TermService>();
+
+// ---------------------------------------------------------
+// System-level Services (NOT tenant-scoped)
+// ---------------------------------------------------------
+builder.Services.AddScoped<TenantService>();
+builder.Services.AddScoped<SystemSettingsService>();
+
+// ---------------------------------------------------------
+// Email + Identity
+// ---------------------------------------------------------
+builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<PasswordHasher<User>>();
 
-// Email + Notification dependencies
-builder.Services.AddScoped<IEmailService, EmailService>();
-
+// ---------------------------------------------------------
+// MVC
+// ---------------------------------------------------------
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
 
 var app = builder.Build();
 
+// ---------------------------------------------------------
+// Middleware
+// ---------------------------------------------------------
 app.UseSwagger();
 app.UseSwaggerUI();
 
-app.MapControllers();
+app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapControllers();
 
 app.Run();
