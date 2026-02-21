@@ -31,4 +31,19 @@ public class BaseService<TEntity>(BaseRepository<TEntity> repo)
     {
         return _repo.DeleteAsync(id);
     }
+
+    public Task<List<TEntity>> BulkUpdate(List<TEntity> entities)
+    {
+        return _repo.BulkUpdate(entities);
+    }
+
+    public Task<List<TEntity>> BulkCreate(List<TEntity> entities)
+    {
+        return _repo.BulkCreate(entities);
+    }
+
+    public Task<List<TEntity>> BulkDelete(List<TEntity> entities)
+    {
+        return _repo.BulkDelete(entities);
+    }
 }

@@ -1,4 +1,4 @@
-﻿namespace SchoolSystem.Backend.Interface;
+namespace SchoolSystem.Backend.Interface;
 
 public interface ITenantContext
 {
@@ -10,10 +10,7 @@ public class TenantContext : ITenantContext
     public TenantContext(IHttpContextAccessor accessor)
     {
         var claim = accessor.HttpContext?.User?.FindFirst("TenantId")?.Value;
-        if (claim == null)
-            throw new Exception("TenantId missing from JWT");
-
-        TenantId = Guid.Parse(claim);
+        TenantId = string.IsNullOrEmpty(claim) ? Guid.Empty : Guid.Parse(claim);
     }
 
     public Guid TenantId { get; }

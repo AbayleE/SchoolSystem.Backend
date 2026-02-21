@@ -31,7 +31,7 @@ public class BaseController<TEntity>(BaseService<TEntity> service) : ControllerB
         var created = await service.AddAsync(entity);
         return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
     }
-    
+
     [Authorize(Roles = "SystemOwner, Manager, SchoolAdmin")]
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] TEntity entity)
@@ -47,5 +47,29 @@ public class BaseController<TEntity>(BaseService<TEntity> service) : ControllerB
     public async Task<IActionResult> Delete(Guid id)
     {
         return await service.DeleteAsync(id) ? NoContent() : NotFound();
+    }
+
+    [Authorize(Roles = "SystemOwner, Manager, SchoolAdmin")]
+    [HttpPost("bulk")]
+    public async Task<IActionResult> BulkCreate([FromBody] List<TEntity> entities)
+    {
+        var result = await service.BulkCreate(entities);
+        return Ok(result);
+    }
+
+    [Authorize(Roles = "SystemOwner, Manager, SchoolAdmin")]
+    [HttpPut("bulk")]
+    public async Task<IActionResult> BulkUpdate([FromBody] List<TEntity> entities)
+    {
+        var result = await service.BulkUpdate(entities);
+        return Ok(result);
+    }
+
+    [Authorize(Roles = "SystemOwner, Manager, SchoolAdmin")]
+    [HttpDelete("bulk")]
+    public async Task<IActionResult> BulkDelete([FromBody] List<TEntity> entities)
+    {
+        var result = await service.BulkDelete(entities);
+        return Ok(result);
     }
 }

@@ -1,6 +1,11 @@
+using System.Net;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+<<<<<<< Updated upstream
 using Microsoft.AspNetCore.Builder;
+=======
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+>>>>>>> Stashed changes
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -17,10 +22,37 @@ using SchoolSystem.Domain.Entities;
 var builder = WebApplication.CreateBuilder(args);
 
 // ---------------------------------------------------------
+// CORS
+// ---------------------------------------------------------
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? ["http://127.0.0.1:5500"];
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins(allowedOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
+
+
+// ---------------------------------------------------------
+// Health checks
+// ---------------------------------------------------------
+builder.Services.AddHealthChecks()
+    .AddNpgSql(
+        builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection is required"),
+        name: "database");
+
+// ---------------------------------------------------------
 // JWT Authentication
 // ---------------------------------------------------------
 var jwtSetting = builder.Configuration.GetSection("Jwt");
-var key = Encoding.UTF8.GetBytes(jwtSetting["Key"]!);
+var jwtKey = jwtSetting["Key"];
+if (string.IsNullOrEmpty(jwtKey))
+    throw new InvalidOperationException("Jwt:Key is required. Set it in appsettings, User Secrets, or environment (Jwt__Key).");
+var key = Encoding.UTF8.GetBytes(jwtKey);
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -133,16 +165,43 @@ builder.Services.AddEndpointsApiExplorer();
 var app = builder.Build();
 
 // ---------------------------------------------------------
+// Global exception handling
+// ---------------------------------------------------------
+app.UseExceptionHandler(err =>
+{
+    err.Run(async ctx =>
+    {
+        ctx.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+        ctx.Response.ContentType = "application/json";
+        var ex = ctx.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>()?.Error;
+        if (ex != null)
+        {
+            var logger = ctx.RequestServices.GetRequiredService<ILogger<Program>>();
+            logger.LogError(ex, "Unhandled exception");
+            await ctx.Response.WriteAsJsonAsync(new { error = "An error occurred.", message = ex.Message });
+        }
+    });
+});
+
+// ---------------------------------------------------------
 // Middleware
 // ---------------------------------------------------------
 app.UseSwagger();
 app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
+app.UseRouting();
+
+app.UseCors();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapControllers();
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapControllers();
+});
+
+//app.MapHealthChecks("/health", new HealthCheckOptions { ResponseWriter = AspNetCore.HealthChecks.UI.Client.UIResponseWriter.WriteHealthCheckUIResponse });
 
 app.Run();
