@@ -21,6 +21,8 @@ public class SchoolDbContext(DbContextOptions<SchoolDbContext> options) : DbCont
     public DbSet<Teacher> Teachers { get; set; }
     public DbSet<SchoolSettings> SchoolSettings { get; set; }
     public DbSet<AuditLog> AuditLogs { get; set; }
+    public DbSet<Assignment> Assignments { get; set; }
+    public DbSet<AssignmentSubmission> AssignmentSubmissions { get; set; }
     public DbSet<Invitation> Invitations { get; set; }
     public DbSet<Notification> Notifications { get; set; }
     public DbSet<SystemSettings> SystemSettings { get; set; }

@@ -1,15 +1,9 @@
 using System.Net;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-<<<<<<< Updated upstream
-using Microsoft.AspNetCore.Builder;
-=======
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
->>>>>>> Stashed changes
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using SchoolSystem.Backend.Data;
@@ -24,7 +18,8 @@ var builder = WebApplication.CreateBuilder(args);
 // ---------------------------------------------------------
 // CORS
 // ---------------------------------------------------------
-var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? ["http://127.0.0.1:5500"];
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ??
+                     ["http://127.0.0.1:5500"];
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
@@ -42,7 +37,8 @@ builder.Services.AddCors(options =>
 // ---------------------------------------------------------
 builder.Services.AddHealthChecks()
     .AddNpgSql(
-        builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection is required"),
+        builder.Configuration.GetConnectionString("DefaultConnection") ??
+        throw new InvalidOperationException("ConnectionStrings:DefaultConnection is required"),
         name: "database");
 
 // ---------------------------------------------------------
@@ -51,7 +47,8 @@ builder.Services.AddHealthChecks()
 var jwtSetting = builder.Configuration.GetSection("Jwt");
 var jwtKey = jwtSetting["Key"];
 if (string.IsNullOrEmpty(jwtKey))
-    throw new InvalidOperationException("Jwt:Key is required. Set it in appsettings, User Secrets, or environment (Jwt__Key).");
+    throw new InvalidOperationException(
+        "Jwt:Key is required. Set it in appsettings, User Secrets, or environment (Jwt__Key).");
 var key = Encoding.UTF8.GetBytes(jwtKey);
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -136,12 +133,18 @@ builder.Services.AddScoped<EnrollmentService>();
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<InvitationService>();
 builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<AssignmentService>();
 builder.Services.AddScoped<ApplicationService>();
 builder.Services.AddScoped<ApplicationDocumentService>();
 builder.Services.AddScoped<FileResourceService>();
 builder.Services.AddScoped<TranscriptRequestService>();
 builder.Services.AddScoped<AcademicYearService>();
 builder.Services.AddScoped<TermService>();
+
+// ---------------------------------------------------------
+// Workflow services (depend on tenant-scoped services above)
+// ---------------------------------------------------------
+builder.Services.AddScoped<SchoolSystem.Backend.Services.Workflows.AssignmentWorkflowService>();
 
 // ---------------------------------------------------------
 // System-level Services (NOT tenant-scoped)
@@ -173,7 +176,7 @@ app.UseExceptionHandler(err =>
     {
         ctx.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
         ctx.Response.ContentType = "application/json";
-        var ex = ctx.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>()?.Error;
+        var ex = ctx.Features.Get<IExceptionHandlerFeature>()?.Error;
         if (ex != null)
         {
             var logger = ctx.RequestServices.GetRequiredService<ILogger<Program>>();
@@ -197,10 +200,7 @@ app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseEndpoints(endpoints =>
-{
-    endpoints.MapControllers();
-});
+app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
 
 //app.MapHealthChecks("/health", new HealthCheckOptions { ResponseWriter = AspNetCore.HealthChecks.UI.Client.UIResponseWriter.WriteHealthCheckUIResponse });
 
