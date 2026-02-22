@@ -11,14 +11,31 @@ public class AuthController(IAuthService authService) : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginDto dto)
     {
-        var result = await authService.LoginAsync(dto);
-        return Ok(result);
-    }
+        var (user, token) = await authService.LoginAsync(dto);
+        return Ok(new
+        {
+            user = new {
+                id = user.Id,
+                tenantId = user.TenantId,
+                role = user.Role.ToString()  
+            },
+            token = token
+        });
+}
 
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterWithInvitationDto dto)
     {
-        var result = await authService.RegisterWithInvitationAsync(dto);
-        return Ok(result);
+        var (user, token) = await authService.RegisterWithInvitationAsync(dto);
+        return Ok(new
+        {
+            user = new {
+                id = user.Id,
+                tenantId = user.TenantId,
+                role = user.Role.ToString(),
+                email = user.Email,
+            },
+            token = token
+        });
     }
 }

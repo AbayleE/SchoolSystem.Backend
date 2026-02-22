@@ -31,6 +31,8 @@ public class InvitationsController(InvitationService invitationService) : Contro
             invitation.ExpiresAt
         });
     }
+    
+    
 
     [HttpGet("token/{token}")]
     public async Task<IActionResult> GetInvitationByToken(string token)

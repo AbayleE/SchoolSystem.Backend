@@ -17,7 +17,7 @@ public class AuthService(
     ILogger<AuthService> logger,
     PasswordHasher<User> passwordHasher) : IAuthService
 {
-    public async Task<AuthResponseDto> LoginAsync(LoginDto dto)
+    public async Task<(User, string)> LoginAsync(LoginDto dto)
     {
         var user = await context.Users
             .FirstOrDefaultAsync(u => u.Email == dto.Email) ?? throw new Exception("Invalid credentials");
@@ -29,11 +29,19 @@ public class AuthService(
             if (result == PasswordVerificationResult.Failed)
                 throw new Exception("Invalid credentials");
         }
+        
+        var userDto =  new User
+        {
+            Id = user.Id,
+            Role = user.Role,
+            TenantId = user.TenantId,
+            Email = user.Email,
+        };
 
-        return BuildAuthResponse(user);
+        return BuildAuthResponse(userDto);
     }
 
-    public async Task<AuthResponseDto> RegisterWithInvitationAsync(RegisterWithInvitationDto dto)
+    public async Task<(User, string)> RegisterWithInvitationAsync(RegisterWithInvitationDto dto)
     {
         var invitation = await context.Invitations
             .FirstOrDefaultAsync(i => i.Token == dto.Token && !i.Used && i.ExpiresAt > DateTime.UtcNow);
@@ -61,17 +69,11 @@ public class AuthService(
         return BuildAuthResponse(user);
     }
 
-    private AuthResponseDto BuildAuthResponse(User user)
+    private (User, string) BuildAuthResponse(User user)
     {
         var token = GenerateJwtToken(user);
 
-        return new AuthResponseDto
-        {
-            Token = token,
-            UserId = user.Id,
-            Role = user.Role,
-            TenantId = user.TenantId
-        };
+        return (user, token);
     }
 
 
