@@ -135,11 +135,13 @@ builder.Services.AddScoped<InvitationService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<AssignmentService>();
 builder.Services.AddScoped<ApplicationService>();
+builder.Services.AddScoped<ApplicationServiceEnhanced>();
 builder.Services.AddScoped<ApplicationDocumentService>();
 builder.Services.AddScoped<FileResourceService>();
 builder.Services.AddScoped<TranscriptRequestService>();
 builder.Services.AddScoped<AcademicYearService>();
 builder.Services.AddScoped<TermService>();
+builder.Services.AddScoped<ContactMessageService>();
 
 // ---------------------------------------------------------
 // Workflow services (depend on tenant-scoped services above)
@@ -157,6 +159,7 @@ builder.Services.AddScoped<SystemSettingsService>();
 // ---------------------------------------------------------
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IAuthServiceEnhanced, AuthServiceEnhanced>();
 builder.Services.AddScoped<PasswordHasher<User>>();
 
 // ---------------------------------------------------------

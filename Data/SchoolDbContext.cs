@@ -28,6 +28,7 @@ public class SchoolDbContext(DbContextOptions<SchoolDbContext> options) : DbCont
     public DbSet<SystemSettings> SystemSettings { get; set; }
     public DbSet<FileResource> FileResources { get; set; }
     public DbSet<TranscriptRequest> TranscriptRequests { get; set; }
+    public DbSet<ContactMessage> ContactMessages { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
