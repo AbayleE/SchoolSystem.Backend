@@ -10,10 +10,10 @@ public class CreateApplicationDto
     public required string ParentPhone { get; set; }
     public string? Parent2Email { get; set; }
     public string? Parent2Phone { get; set; }
-    public required string Address { get; set; }
+    public required string Region { get; set; }
     public string? City { get; set; }
-    public string? State { get; set; }
-    public string? ZipCode { get; set; }
+    public string? SubCity { get; set; }
+    public string? Woreda { get; set; }
     public required string GradeApplied { get; set; }
     public Guid AcademicYearId { get; set; }
 }

@@ -78,14 +78,15 @@ public class UserService(SchoolDbContext context, ILogger<UserService> logger, B
         if (!string.IsNullOrEmpty(dto.Phone))
             user.Phone = dto.Phone;
 
-        if (!string.IsNullOrEmpty(dto.Address) || !string.IsNullOrEmpty(dto.City) || 
-            !string.IsNullOrEmpty(dto.State) || !string.IsNullOrEmpty(dto.ZipCode))
+        if (!string.IsNullOrEmpty(dto.Region) || !string.IsNullOrEmpty(dto.City) || 
+            !string.IsNullOrEmpty(dto.SubCity) || !string.IsNullOrEmpty(dto.Woreda) || !string.IsNullOrEmpty(dto.HouseNumber))
         {
-            var address = dto.Address ?? user.Address?.Street ?? "";
+            var region = dto.Region ?? user.Address?.Region ?? "";
             var city = dto.City ?? user.Address?.City ?? "";
-            var state = dto.State ?? user.Address?.State ?? "";
-            var zipCode = dto.ZipCode ?? user.Address?.ZipCode ?? "";
-            user.Address = new Address(address, city, state, zipCode);
+            var subCity = dto.SubCity?? user.Address?.SubCity ?? "";
+            var woreda = dto.Woreda ?? user.Address?.Woreda?? "";
+            var houseNumber = dto.HouseNumber ?? user.Address?.HouseNumber ?? "";
+            user.Address = new Address(region, city, subCity, woreda, houseNumber);
         }
 
         user.UpdatedAt = DateTime.UtcNow;
@@ -117,5 +118,14 @@ public class UserService(SchoolDbContext context, ILogger<UserService> logger, B
         logger.LogInformation("User deleted with ID {Id}", userId);
 
         return true;
+    }
+
+    public async Task<User?> UpdatePasswordAsync (string email, string newPassword )
+    {
+        var user = await context.Users.Where(user1 => user1.Email == email).FirstAsync();
+        user.PasswordHash = _passwordHasher.HashPassword(user, newPassword);
+
+        await context.SaveChangesAsync();
+        return user;
     }
 }

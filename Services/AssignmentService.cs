@@ -12,8 +12,6 @@ public class AssignmentService(
     ITenantContext tenant)
     : BaseService<Assignment>(repo)
 {
-    private readonly SchoolDbContext _context = context;
-    private readonly ITenantContext _tenant = tenant;
 
     /// <summary>Get assignment by id (tenant-scoped via base).</summary>
     public new async Task<Assignment?> GetByIdAsync(Guid id) => await base.GetByIdAsync(id);
@@ -23,7 +21,7 @@ public class AssignmentService(
         var submission = new AssignmentSubmission
         {
             Id = Guid.NewGuid(),
-            TenantId = _tenant.TenantId,
+            TenantId = tenant.TenantId,
             AssignmentId = assignmentId,
             StudentId = studentId,
             FileId = fileId,
@@ -32,21 +30,21 @@ public class AssignmentService(
             UpdatedAt = DateTime.UtcNow
         };
 
-        _context.AssignmentSubmissions.Add(submission);
-        await _context.SaveChangesAsync();
+        context.AssignmentSubmissions.Add(submission);
+        await context.SaveChangesAsync();
     }
 
     public async Task<AssignmentSubmission?> GetSubmission(Guid submissionId)
     {
-        return await _context.AssignmentSubmissions
-            .Where(s => s.Id == submissionId && s.TenantId == _tenant.TenantId)
+        return await context.AssignmentSubmissions
+            .Where(s => s.Id == submissionId && s.TenantId == tenant.TenantId)
             .FirstOrDefaultAsync();
     }
 
     public async Task<List<AssignmentSubmission>> GetSubmissionsByAssignmentId(Guid assignmentId)
     {
-        return await _context.AssignmentSubmissions
-            .Where(s => s.AssignmentId == assignmentId && s.TenantId == _tenant.TenantId)
+        return await context.AssignmentSubmissions
+            .Where(s => s.AssignmentId == assignmentId && s.TenantId == tenant.TenantId)
             .OrderByDescending(s => s.SubmittedAt)
             .ToListAsync();
     }
@@ -62,7 +60,7 @@ public class AssignmentService(
         submission.GradedAt = DateTime.UtcNow;
         submission.UpdatedAt = DateTime.UtcNow;
 
-        _context.AssignmentSubmissions.Update(submission);
-        await _context.SaveChangesAsync();
+        context.AssignmentSubmissions.Update(submission);
+        await context.SaveChangesAsync();
     }
 }

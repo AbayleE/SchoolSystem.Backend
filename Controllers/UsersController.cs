@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using SchoolSystem.Backend.DTOs.Users;
 using SchoolSystem.Backend.Extensions;
@@ -129,5 +130,14 @@ public class UserController(UserService userService) : ControllerBase
     {
         var success = await userService.DeleteUserAsync(id);
         return success ? NoContent() : NotFound(new { message = "User not found" });
+    }
+
+    [HttpPatch]
+    public async Task<IActionResult> UpdatePassword ([FromBody] ForgotPasswordRequestDto forgotPasswordRequestDto)
+    {
+        var success = await userService.UpdatePasswordAsync(forgotPasswordRequestDto.Email, forgotPasswordRequestDto.NewPassword);
+
+        return Ok(new { message = "User Password updated successfully" });
+        
     }
 }

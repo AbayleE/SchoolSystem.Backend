@@ -8,32 +8,22 @@ using SchoolSystem.Domain.Entities;
 
 namespace SchoolSystem.Backend.Services.AuthService;
 
-public class AuthServiceEnhanced : IAuthServiceEnhanced
+public class AuthServiceEnhanced(
+    IConfiguration config,
+    SchoolDbContext context,
+    ILogger<AuthServiceEnhanced> logger)
+    : IAuthServiceEnhanced
 {
-    private readonly IConfiguration _config;
-    private readonly SchoolDbContext _context;
-    private readonly ILogger<AuthServiceEnhanced> _logger;
-
-    public AuthServiceEnhanced(
-        IConfiguration config,
-        SchoolDbContext context,
-        ILogger<AuthServiceEnhanced> logger)
-    {
-        _config = config;
-        _context = context;
-        _logger = logger;
-    }
-
     /// <summary>
     /// Verify JWT token validity
     /// </summary>
     public async Task<VerifyTokenResponseDto> VerifyTokenAsync(string token)
     {
-        _logger.LogInformation("Verifying JWT token");
+        logger.LogInformation("Verifying JWT token");
 
         try
         {
-            var jwtSettings = _config.GetSection("Jwt");
+            var jwtSettings = config.GetSection("Jwt");
             var jwtKey = Encoding.UTF8.GetBytes(jwtSettings["Key"] ?? throw new InvalidOperationException("JWT Key not found"));
             var key = new SymmetricSecurityKey(jwtKey);
 
@@ -58,7 +48,7 @@ public class AuthServiceEnhanced : IAuthServiceEnhanced
             if (string.IsNullOrEmpty(userIdClaim) || string.IsNullOrEmpty(emailClaim))
                 return new VerifyTokenResponseDto { IsValid = false };
 
-            var user = await _context.Users.FindAsync(Guid.Parse(userIdClaim));
+            var user = await context.Users.FindAsync(Guid.Parse(userIdClaim));
             if (user == null)
                 return new VerifyTokenResponseDto { IsValid = false };
 
@@ -73,7 +63,7 @@ public class AuthServiceEnhanced : IAuthServiceEnhanced
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Token verification failed");
+            logger.LogWarning(ex, "Token verification failed");
             return new VerifyTokenResponseDto { IsValid = false };
         }
     }
@@ -83,7 +73,7 @@ public class AuthServiceEnhanced : IAuthServiceEnhanced
     /// </summary>
     public async Task<RefreshTokenResponseDto> RefreshTokenAsync(string existingToken)
     {
-        _logger.LogInformation("Refreshing JWT token");
+        logger.LogInformation("Refreshing JWT token");
 
         // Verify the existing token is still valid (but may be expired)
         var verifyResult = await VerifyTokenAsync(existingToken);
@@ -91,12 +81,12 @@ public class AuthServiceEnhanced : IAuthServiceEnhanced
             throw new UnauthorizedAccessException("Invalid token");
 
         // Get the user and generate a new token
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == verifyResult.UserId);
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == verifyResult.UserId);
         if (user == null)
             throw new InvalidOperationException("User not found");
 
         var newToken = GenerateJwtToken(user);
-        var expiresInMinutes = int.Parse(_config.GetSection("Jwt")["ExpiresInMinutes"] ?? "60");
+        var expiresInMinutes = int.Parse(config.GetSection("Jwt")["ExpiresInMinutes"] ?? "60");
 
         return new RefreshTokenResponseDto
         {
@@ -107,9 +97,9 @@ public class AuthServiceEnhanced : IAuthServiceEnhanced
 
     private string GenerateJwtToken(User user)
     {
-        _logger.LogInformation("Generating JWT token for user {UserId}", user.Id);
+        logger.LogInformation("Generating JWT token for user {UserId}", user.Id);
 
-        var jwtSettings = _config.GetSection("Jwt");
+        var jwtSettings = config.GetSection("Jwt");
         var jwtKey = Encoding.UTF8.GetBytes(jwtSettings["Key"] ?? throw new InvalidOperationException("JWT Key not found"));
         var key = new SymmetricSecurityKey(jwtKey);
 

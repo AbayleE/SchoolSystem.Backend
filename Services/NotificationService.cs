@@ -19,8 +19,8 @@ public class NotificationService(
             Id = Guid.NewGuid(),
             TenantId = _tenant.TenantId,
             UserId = teacherId,
-            Title = "Assignment submission",
-            Body = message,
+            Subject = "Assignment submission",
+            Message = message,
             Type = NotificationType.Announcement,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
@@ -35,8 +35,8 @@ public class NotificationService(
             Id = Guid.NewGuid(),
             TenantId = _tenant.TenantId,
             UserId = studentId,
-            Title = "Assignment graded",
-            Body = message,
+            Subject = "Assignment graded",
+            Message = message,
             Type = NotificationType.GradePublished,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow

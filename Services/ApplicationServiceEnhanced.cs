@@ -15,17 +15,12 @@ public class ApplicationServiceEnhanced(
     EmailService emailService,
     ILogger<ApplicationServiceEnhanced> logger) : BaseService<Application>(repo)
 {
-    private readonly SchoolDbContext _context = context;
-    private readonly ITenantContext _tenant = tenant;
-    private readonly EmailService _emailService = emailService;
-    private readonly ILogger<ApplicationServiceEnhanced> _logger = logger;
-
     /// <summary>
     /// Create new application (public endpoint - no auth required)
     /// </summary>
     public async Task<Application> CreateApplicationAsync(CreateApplicationDto dto, Guid tenantId)
     {
-        _logger.LogInformation("Creating application for tenant {TenantId}", tenantId);
+        logger.LogInformation("Creating application for tenant {TenantId}", tenantId);
 
         // Validate email format
         if (!IsValidEmail(dto.Email) || !IsValidEmail(dto.ParentEmail))
@@ -44,17 +39,17 @@ public class ApplicationServiceEnhanced(
             ParentName = new Domain.ValueObjects.FullName("", "", ""),
             ParentEmail = dto.ParentEmail,
             ParentPhone = dto.ParentPhone,
-            Address = new Domain.ValueObjects.Address(dto.Address, dto.City ?? "", dto.State ?? "", dto.ZipCode ?? ""),
+            Address = new Domain.ValueObjects.Address(dto.Region, dto.City ?? "", dto.SubCity ?? "", dto.Woreda ?? "", ""),
             Status = ApplicationStatus.Pending,
             SubmittedAt = DateTime.UtcNow,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
 
-        _context.Applications.Add(application);
-        await _context.SaveChangesAsync();
+        context.Applications.Add(application);
+        await context.SaveChangesAsync();
 
-        _logger.LogInformation("Application created with ID {ApplicationId}", application.Id);
+        logger.LogInformation("Application created with ID {ApplicationId}", application.Id);
 
         // Send confirmation email (optional)
         // await _emailService.SendApplicationConfirmationEmailAsync(dto.Email, application.Id);
@@ -67,9 +62,9 @@ public class ApplicationServiceEnhanced(
     /// </summary>
     public async Task<(List<Application> Items, int Total)> GetApplicationsAsync(ApplicationFilterDto filter, Guid tenantId)
     {
-        _logger.LogInformation("Fetching applications for tenant {TenantId}", tenantId);
+        logger.LogInformation("Fetching applications for tenant {TenantId}", tenantId);
 
-        var query = _context.Applications
+        var query = context.Applications
             .Where(a => a.TenantId == tenantId);
 
         // Apply status filter
@@ -104,9 +99,9 @@ public class ApplicationServiceEnhanced(
     /// </summary>
     public async Task<Application?> GetApplicationByIdAsync(Guid id, Guid tenantId)
     {
-        _logger.LogInformation("Fetching application {ApplicationId}", id);
+        logger.LogInformation("Fetching application {ApplicationId}", id);
 
-        return await _context.Applications
+        return await context.Applications
             .Where(a => a.Id == id && a.TenantId == tenantId)
             .FirstOrDefaultAsync();
     }
@@ -121,7 +116,7 @@ public class ApplicationServiceEnhanced(
         Guid tenantId,
         bool sendNotification = true)
     {
-        _logger.LogInformation("Updating application {ApplicationId} status to {Status}", id, newStatus);
+        logger.LogInformation("Updating application {ApplicationId} status to {Status}", id, newStatus);
 
         var application = await GetApplicationByIdAsync(id, tenantId);
         if (application == null)
@@ -133,8 +128,8 @@ public class ApplicationServiceEnhanced(
         application.ReviewedAt = DateTime.UtcNow;
         application.UpdatedAt = DateTime.UtcNow;
 
-        _context.Applications.Update(application);
-        await _context.SaveChangesAsync();
+        context.Applications.Update(application);
+        await context.SaveChangesAsync();
 
         // Send notification email (optional)
         if (sendNotification && !string.IsNullOrEmpty(application.ParentEmail))

@@ -34,7 +34,11 @@ public class BaseRepository<TEntity>(DbContext context, ITenantContext tenant)
     public async Task<TEntity> AddAsync(TEntity entity)
     {
         EnsureTenant();
-        entity.TenantId = tenant.TenantId;
+        entity.TenantId = entity.TenantId == Guid.Empty 
+            ? tenant.TenantId 
+            : entity.TenantId;
+        entity.Id = Guid.NewGuid();
+        
         await _dbSet.AddAsync(entity);
         await context.SaveChangesAsync();
         return entity;
@@ -43,7 +47,9 @@ public class BaseRepository<TEntity>(DbContext context, ITenantContext tenant)
     public async Task<TEntity> UpdateAsync(TEntity entity)
     {
         EnsureTenant();
-        entity.TenantId = tenant.TenantId;
+        entity.TenantId = entity.TenantId == Guid.Empty 
+            ? tenant.TenantId 
+            : entity.TenantId;
         _dbSet.Update(entity);
         await context.SaveChangesAsync();
         return entity;
@@ -71,7 +77,12 @@ public class BaseRepository<TEntity>(DbContext context, ITenantContext tenant)
     public async Task<List<TEntity>> BulkCreate(List<TEntity> entities)
     {
         EnsureTenant();
-        foreach (var e in entities) e.TenantId = tenant.TenantId;
+        foreach (var e in entities) {
+            e.TenantId = e.TenantId == Guid.Empty 
+            ? tenant.TenantId 
+            : e.TenantId;
+            
+        }
         await _dbSet.AddRangeAsync(entities);
         await context.SaveChangesAsync();
         return entities;
@@ -82,7 +93,9 @@ public class BaseRepository<TEntity>(DbContext context, ITenantContext tenant)
         EnsureTenant();
         foreach (var entity in entities)
         {
-            entity.TenantId = tenant.TenantId;
+            entity.TenantId = entity.TenantId == Guid.Empty 
+                ? tenant.TenantId 
+                : entity.TenantId;
             _dbSet.Update(entity);
         }
         await context.SaveChangesAsync();

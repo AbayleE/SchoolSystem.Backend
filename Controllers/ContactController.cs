@@ -104,8 +104,8 @@ public class ContactController(
                 return NotFound(new { message = "Contact message not found" });
 
             // Mark as read
-            if (!message.IsRead)
-                await contactMessageService.MarkAsReadAsync(id, tenantContext.TenantId);
+            //if (!message.IsRead)
+               // await contactMessageService.MarkAsReadAsync(id, tenantContext.TenantId);
 
             return Ok(message);
         }
