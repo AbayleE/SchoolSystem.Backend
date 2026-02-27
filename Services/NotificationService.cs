@@ -6,18 +6,24 @@ using SchoolSystem.Domain.Enums;
 namespace SchoolSystem.Backend.Services;
 
 public class NotificationService(
-    BaseRepository<Notification> repo,
+    TenantRepository<Notification> repo,
     ITenantContext tenant)
     : BaseService<Notification>(repo)
 {
-    private readonly ITenantContext _tenant = tenant;
+    public Task NotifyTeacherAsync(Guid teacherId, string subject, string message) =>
+        CreateNotificationAsync(teacherId, subject, message, NotificationType.Assignment);
 
+    public Task NotifyStudentAsync(Guid studentId, string subject, string message) =>
+        CreateNotificationAsync(studentId, subject, message, NotificationType.Grade);
+
+    public Task NotifyUserAsync(Guid userId, string subject, string message, NotificationType type) =>
+        CreateNotificationAsync(userId, subject, message, type);
     public async Task NotifyTeacher(Guid teacherId, string message)
     {
         var notification = new Notification
         {
             Id = Guid.NewGuid(),
-            TenantId = _tenant.TenantId,
+            TenantId = tenant.TenantId,
             UserId = teacherId,
             Subject = "Assignment submission",
             Message = message,
@@ -28,18 +34,21 @@ public class NotificationService(
         await AddAsync(notification);
     }
 
-    public async Task NotifyStudent(Guid studentId, string message)
+    private async Task CreateNotificationAsync(
+        Guid userId,
+        string subject,
+        string message,
+        NotificationType type)
     {
         var notification = new Notification
         {
-            Id = Guid.NewGuid(),
-            TenantId = _tenant.TenantId,
-            UserId = studentId,
-            Subject = "Assignment graded",
+            TenantId = tenant.TenantId,
+            UserId = userId,
+            Subject = subject,
             Message = message,
-            Type = NotificationType.GradePublished,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            Type = type,
+            Channel = NotificationChannel.InApp,
+            IsRead = false
         };
         await AddAsync(notification);
     }

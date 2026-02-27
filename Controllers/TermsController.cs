@@ -3,5 +3,5 @@ using SchoolSystem.Domain.Entities;
 
 namespace SchoolSystem.Backend.Controllers;
 
-public class TermsController(BaseService<Term> service)
+public class TermsController(TenantService<Term> service)
     : BaseController<Term>(service);

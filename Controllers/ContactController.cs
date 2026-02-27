@@ -9,134 +9,50 @@ namespace SchoolSystem.Backend.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ContactController(
-    ContactMessageService contactMessageService,
-    ITenantContext tenantContext,
-    ILogger<ContactController> logger) : ControllerBase
+public class ContactController(ContactMessageService contactMessageService) : ControllerBase
 {
-    // ---------------------------------------------------------
-    // POST /api/contact
-    // Accept contact form data, validate, store to database
-    // Send to admin email (optional)
-    // No auth required (public endpoint)
-    // ---------------------------------------------------------
+    // POST /api/contact — public
     [HttpPost]
     public async Task<IActionResult> CreateContactMessage([FromBody] CreateContactMessageDto dto)
     {
-        try
-        {
-            // Get tenant from header or context
-            var tenantId = HttpContext.GetTenantIdFromHeader();
-            if (tenantId == Guid.Empty && tenantContext.TenantId != Guid.Empty)
-                tenantId = tenantContext.TenantId;
-
-            if (tenantId == Guid.Empty)
-                return BadRequest(new { message = "Invalid tenant context" });
-
-            var message = await contactMessageService.CreateContactMessageAsync(dto, tenantId);
-
-            return CreatedAtAction(
-                nameof(GetContactMessage),
-                new { id = message.Id },
-                new { id = message.Id, message = "Your message has been received. We'll get back to you shortly." });
-        }
-        catch (InvalidOperationException ex)
-        {
-            logger.LogWarning(ex, "Invalid contact message data");
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Error creating contact message");
-            return StatusCode(500, new { message = "An error occurred while processing your message" });
-        }
+        var message = await contactMessageService.CreateAsync(dto);
+        return CreatedAtAction(
+            nameof(GetContactMessage),
+            new { id = message.Id },
+            new { id = message.Id, message = "Your message has been received." });
     }
 
-    // ---------------------------------------------------------
-    // GET /api/contact/messages
-    // List all contact messages
-    // Admin/SchoolAdmin only
-    // ---------------------------------------------------------
-    [Authorize(Roles = "SystemOwner, SchoolAdmin, Manager")]
-    [HttpGet("messages")]
+    // GET /api/contact
+    [Authorize(Roles = "SystemOwner, Manager")]
+    [HttpGet]
     public async Task<IActionResult> GetContactMessages(
         [FromQuery] int pageNumber = 1,
-        [FromQuery] int pageSize = 10)
+        [FromQuery] int pageSize = 10,
+        [FromQuery] bool unresolvedOnly = false)
     {
-        try
+        var (items, total) = await contactMessageService.GetPagedAsync(pageNumber, pageSize, unresolvedOnly);
+        return Ok(new
         {
-            var messages = await contactMessageService.GetContactMessagesAsync(
-                tenantContext.TenantId,
-                pageNumber,
-                pageSize);
-
-            return Ok(new
-            {
-                data = messages,
-                pagination = new
-                {
-                    pageNumber = pageNumber,
-                    pageSize = pageSize,
-                    totalRecords = messages.Count
-                }
-            });
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Error fetching contact messages");
-            return StatusCode(500, new { message = "An error occurred while fetching messages" });
-        }
+            data = items,
+            pagination = new { pageNumber, pageSize, totalRecords = total }
+        });
     }
 
-    // ---------------------------------------------------------
-    // GET /api/contact/:id
-    // Get single contact message (optional)
-    // ---------------------------------------------------------
-    [Authorize(Roles = "SystemOwner, SchoolAdmin, Manager")]
+    // GET /api/contact/{id}
+    [Authorize(Roles = "SystemOwner, Manager")]
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetContactMessage(Guid id)
     {
-        try
-        {
-            var message = await contactMessageService.GetContactMessageByIdAsync(id, tenantContext.TenantId);
-
-            if (message == null)
-                return NotFound(new { message = "Contact message not found" });
-
-            // Mark as read
-            //if (!message.IsRead)
-               // await contactMessageService.MarkAsReadAsync(id, tenantContext.TenantId);
-
-            return Ok(message);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Error fetching contact message");
-            return StatusCode(500, new { message = "An error occurred while fetching the message" });
-        }
+        var message = await contactMessageService.GetByIdAsync(id);
+        return message == null ? NotFound() : Ok(message);
     }
 
-    // ---------------------------------------------------------
-    // PUT /api/contact/:id/mark-read
-    // Mark message as read
-    // ---------------------------------------------------------
-    [Authorize(Roles = "SystemOwner, SchoolAdmin, Manager")]
-    [HttpPut("{id:guid}/mark-read")]
-    public async Task<IActionResult> MarkAsRead(Guid id)
+    // PUT /api/contact/{id}/resolve
+    [Authorize(Roles = "SystemOwner, Manager")]
+    [HttpPut("{id:guid}/resolve")]
+    public async Task<IActionResult> Resolve(Guid id)
     {
-        try
-        {
-            var message = await contactMessageService.MarkAsReadAsync(id, tenantContext.TenantId);
-
-            if (message == null)
-                return NotFound(new { message = "Contact message not found" });
-
-            return Ok(new { message = "Message marked as read", data = message });
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Error marking message as read");
-            return StatusCode(500, new { message = "An error occurred" });
-        }
+        var message = await contactMessageService.ResolveAsync(id);
+        return Ok(new { message = "Contact message resolved", data = message });
     }
 }

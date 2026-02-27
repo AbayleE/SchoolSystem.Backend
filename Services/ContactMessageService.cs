@@ -1,116 +1,62 @@
 using Microsoft.EntityFrameworkCore;
 using SchoolSystem.Backend.Data;
 using SchoolSystem.Backend.DTOs.Contact;
-using SchoolSystem.Backend.Interface;
+using SchoolSystem.Backend.Services.BaseService;
 using SchoolSystem.Domain.Entities;
 
 namespace SchoolSystem.Backend.Services;
 
 public class ContactMessageService(
+    BaseRepository<ContactMessage> repo,
     SchoolDbContext context,
-    ITenantContext tenant,
-    EmailService emailService,
     ILogger<ContactMessageService> logger)
+    : BaseService<ContactMessage>(repo)
 {
-    
-    /// <summary>
-    /// Create contact message (public endpoint - no auth required)
-    /// </summary>
-    public async Task<ContactMessage> CreateContactMessageAsync(CreateContactMessageDto dto, Guid tenantId)
+    // ContactMessage has no TenantId — it goes to the platform team, not a school
+    public async Task<ContactMessage> CreateAsync(CreateContactMessageDto dto)
     {
-        logger.LogInformation("Creating contact message from {Email}", dto.Email);
-
-        // Validate email format
-        if (!IsValidEmail(dto.Email))
-            throw new InvalidOperationException("Invalid email format");
-
-        var contactMessage = new ContactMessage
+        var message = new ContactMessage
         {
-            Id = Guid.NewGuid(),
-            TenantId = tenantId,
             Name = dto.Name,
             Email = dto.Email,
             Phone = dto.Phone,
             Subject = dto.Subject,
             Message = dto.Message,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            IsResolved = false
         };
 
-        context.Add(contactMessage);
-        await context.SaveChangesAsync();
-
-        logger.LogInformation("Contact message created with ID {ContactMessageId}", contactMessage.Id);
-
-        // Send to admin email (optional)
-        // var adminEmail = await GetSchoolAdminEmailAsync(tenantId);
-        // if (adminEmail != null)
-        //     await _emailService.SendEmailAsync(adminEmail, $"Contact: {dto.Subject}", dto.Message);
-
-        return contactMessage;
+        await AddAsync(message);
+        logger.LogInformation("Contact message received from {Email}", dto.Email);
+        return message;
     }
 
-    /// <summary>
-    /// Get contact message by ID
-    /// </summary>
-    public async Task<ContactMessage?> GetContactMessageByIdAsync(Guid messageId, Guid tenantId)
+    public async Task<ContactMessage> ResolveAsync(Guid id)
     {
-        logger.LogInformation("Fetching contact message {MessageId}", messageId);
+        var message = await GetByIdAsync(id)
+                      ?? throw new NotFoundException("Contact message not found.");
 
-        return await context.Set<ContactMessage>()
-            .Where(c => c.Id == messageId && c.TenantId == tenantId)
-            .FirstOrDefaultAsync();
+        message.IsResolved = true;
+        return await UpdateAsync(message);
     }
 
-    /// <summary>
-    /// List all contact messages (admin only)
-    /// </summary>
-    public async Task<List<ContactMessage>> GetContactMessagesAsync(Guid tenantId, int pageNumber = 1, int pageSize = 10)
+    public async Task<(List<ContactMessage> Items, int Total)> GetPagedAsync(
+        int pageNumber = 1,
+        int pageSize = 10,
+        bool unresolvedOnly = false)
     {
-        logger.LogInformation("Fetching contact messages for tenant {TenantId}", tenantId);
+        var query = context.ContactMessages
+            .Where(c => !c.IsDeleted);
 
-        return await context.Set<ContactMessage>()
-            .Where(c => c.TenantId == tenantId)
+        if (unresolvedOnly)
+            query = query.Where(c => !c.IsResolved);
+
+        var total = await query.CountAsync();
+        var items = await query
             .OrderByDescending(c => c.CreatedAt)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
-    }
 
-    /// <summary>
-    /// Mark message as read
-    /// </summary>
-    ///
-    [Obsolete]
-    public async Task<ContactMessage?> MarkAsReadAsync(Guid messageId, Guid tenantId)
-    {
-        logger.LogInformation("Marking contact message {MessageId} as read", messageId);
-
-        var message = await context.Set<ContactMessage>()
-            .Where(c => c.Id == messageId && c.TenantId == tenantId)
-            .FirstOrDefaultAsync();
-
-        if (message == null)
-            return null;
-        
-        message.UpdatedAt = DateTime.UtcNow;
-
-        context.Update(message);
-        await context.SaveChangesAsync();
-
-        return message;
-    }
-
-    private static bool IsValidEmail(string email)
-    {
-        try
-        {
-            var addr = new System.Net.Mail.MailAddress(email);
-            return addr.Address == email;
-        }
-        catch
-        {
-            return false;
-        }
+        return (items, total);
     }
 }

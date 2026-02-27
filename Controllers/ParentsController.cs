@@ -3,4 +3,4 @@ using SchoolSystem.Domain.Entities;
 
 namespace SchoolSystem.Backend.Controllers;
 
-public class ParentController(BaseService<Parent> service) : BaseController<Parent>(service);
+public class ParentController(TenantService<Parent> service) : BaseController<Parent>(service);

@@ -35,4 +35,9 @@ public static class HttpContextExtensions
 
         return Guid.Empty;
     }
+    
+    public static string? GetUserRole(this ClaimsPrincipal user)
+    {
+        return user.FindFirstValue(ClaimTypes.Role);
+    }
 }

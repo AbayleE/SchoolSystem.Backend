@@ -1,7 +1,22 @@
-using SchoolSystem.Backend.Services.BaseService;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using SchoolSystem.Backend.Services;
 using SchoolSystem.Domain.Entities;
 
 namespace SchoolSystem.Backend.Controllers;
 
-public class EnrollmentsController(BaseService<Enrollment> service)
-    : BaseController<Enrollment>(service);
+[ApiController]
+[Route("api/[controller]")]
+public class EnrollmentsController(EnrollmentService service) : BaseController<Enrollment>(service)
+{
+    // POST /api/enrollments/check — check if student is in a class
+    [Authorize(Roles = "SystemOwner, SchoolAdmin, Manager, Teacher")]
+    [HttpGet("check")]
+    public async Task<IActionResult> CheckEnrollment(
+        [FromQuery] Guid studentId,
+        [FromQuery] Guid classId)
+    {
+        var enrolled = await service.IsStudentInClassAsync(studentId, classId);
+        return Ok(new { enrolled });
+    }
+}

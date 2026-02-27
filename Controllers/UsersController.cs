@@ -6,101 +6,56 @@ using SchoolSystem.Backend.Extensions;
 using SchoolSystem.Backend.Services;
 using SchoolSystem.Backend.Services.BaseService;
 using SchoolSystem.Domain.Entities;
+using SchoolSystem.Domain.Enums;
 
 namespace SchoolSystem.Backend.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class UserController(UserService userService) : ControllerBase
+public class UsersController(UserService userService) : ControllerBase
 {
-    // ---------------------------------------------------------
-    // GET /api/users/profile
-    // Return current authenticated user info
-    // ---------------------------------------------------------
+    // GET /api/users/profile — current user's own profile
     [Authorize]
     [HttpGet("profile")]
     public async Task<IActionResult> GetProfile()
     {
         var userId = User.GetUserId();
-        if (userId == Guid.Empty)
-            return Unauthorized(new { message = "Invalid user context" });
-
         var user = await userService.GetUserByIdAsync(userId);
-        if (user == null)
-            return NotFound(new { message = "User not found" });
-
+        if (user == null) return NotFound();
         return Ok(new
         {
-            id = user.Id,
-            tenantId = user.TenantId,
-            email = user.Email,
-            phone = user.Phone,
-            role = user.Role.ToString(),
-            name = user.Name != null ? $"{user.Name.FirstName} {user.Name.LastName}" : "",
-            createdAt = user.CreatedAt
+            user.Id,
+            user.TenantId,
+            user.Email,
+            user.Phone,
+            user.Role,
+            Name = user.Name != null ? $"{user.Name.FirstName} {user.Name.LastName}" : "",
+            user.CreatedAt
         });
     }
 
-    // ---------------------------------------------------------
-    // GET /api/users
-    // List all users in tenant with pagination
-    // Admin only
-    // ---------------------------------------------------------
-    [Authorize(Roles = "SystemOwner, Manager, SchoolAdmin")]
+    // GET /api/users — all users in tenant
+    [Authorize(Roles = "SystemOwner, SchoolAdmin, Manager")]
     [HttpGet]
-    public async Task<IActionResult> GetUsers(
-        [FromQuery] int pageNumber = 1,
-        [FromQuery] int pageSize = 10,
-        [FromQuery] string? role = null)
-    {
-        // This should be extended from UserService to support pagination and filtering
-        // For now, returning a basic implementation
-        return Ok(new { message = "Use specific user endpoints" });
-    }
+    public async Task<IActionResult> GetUsers()
+        => Ok(await userService.GetUsersAsync());
 
-    // ---------------------------------------------------------
-    // GET /api/users/:id
-    // Get user by ID
-    // ---------------------------------------------------------
-    [Authorize]
+    // GET /api/users/role/{role}
+    [Authorize(Roles = "SystemOwner, SchoolAdmin, Manager")]
+    [HttpGet("role/{role}")]
+    public async Task<IActionResult> GetUsersByRole(UserRole role)
+        => Ok(await userService.GetUsersByRoleAsync(role));
+
+    // GET /api/users/{id}
+    [Authorize(Roles = "SystemOwner, SchoolAdmin, Manager")]
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetUser(Guid id)
     {
         var user = await userService.GetUserByIdAsync(id);
-        return user is null ? NotFound() : Ok(user);
+        return user == null ? NotFound() : Ok(user);
     }
 
-    // ---------------------------------------------------------
-    // GET /api/users/tenant/:tenantId
-    // Get all users by tenant
-    // Admin only
-    // ---------------------------------------------------------
-    [Authorize(Roles = "SystemOwner, Manager, SchoolAdmin")]
-    [HttpGet("tenant/{tenantId:guid}")]
-    public async Task<IActionResult> GetUsersByTenant(Guid tenantId)
-    {
-        var users = await userService.GetUsersByTenantAsync(tenantId);
-        return Ok(users);
-    }
-
-    // ---------------------------------------------------------
-    // POST /api/users
-    // Create new user
-    // Admin only
-    // ---------------------------------------------------------
-    [Authorize(Roles = "SystemOwner, Manager, SchoolAdmin")]
-    [HttpPost]
-    public async Task<IActionResult> CreateUser(CreateUserDto dto)
-    {
-        var user = await userService.CreateUserAsync(dto);
-        return CreatedAtAction(nameof(GetUser), new { id = user.Id }, user);
-    }
-
-    // ---------------------------------------------------------
-    // PUT /api/users/:id
-    // Update user info
-    // Admin or self only
-    // ---------------------------------------------------------
+    // PUT /api/users/{id} — update profile (self or admin)
     [Authorize]
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> UpdateUser(Guid id, [FromBody] UpdateUserDto dto)
@@ -108,36 +63,38 @@ public class UserController(UserService userService) : ControllerBase
         var currentUserId = User.GetUserId();
         var isAdmin = User.IsInRole("SystemOwner") || User.IsInRole("Manager") || User.IsInRole("SchoolAdmin");
 
-        // Only allow users to update their own profile or admins to update any profile
         if (currentUserId != id && !isAdmin)
-            return Forbid("You can only update your own profile");
+            return Forbid();
 
         var user = await userService.UpdateUserAsync(id, dto);
-        if (user == null)
-            return NotFound(new { message = "User not found" });
-
         return Ok(new { message = "User updated successfully", data = user });
     }
 
-    // ---------------------------------------------------------
-    // DELETE /api/users/:id
-    // Delete user
-    // Admin only
-    // ---------------------------------------------------------
+    // PATCH /api/users/password — update own password
+    [Authorize]
+    [HttpPatch("password")]
+    public async Task<IActionResult> UpdatePassword([FromBody] UpdatePasswordDto dto)
+    {
+        var userId = User.GetUserId();
+        await userService.UpdatePasswordAsync(userId, dto);
+        return Ok(new { message = "Password updated successfully" });
+    }
+
+    // PATCH /api/users/{id}/status — admin activates/deactivates user
+    [Authorize(Roles = "SystemOwner, SchoolAdmin")]
+    [HttpPatch("{id:guid}/status")]
+    public async Task<IActionResult> SetStatus(Guid id, [FromBody] SetUserStatusDto dto)
+    {
+        await userService.SetActiveStatusAsync(id, dto.IsActive);
+        return Ok(new { message = $"User {(dto.IsActive ? "activated" : "deactivated")} successfully" });
+    }
+
+    // DELETE /api/users/{id}
     [Authorize(Roles = "SystemOwner, SchoolAdmin")]
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteUser(Guid id)
     {
         var success = await userService.DeleteUserAsync(id);
-        return success ? NoContent() : NotFound(new { message = "User not found" });
-    }
-
-    [HttpPatch]
-    public async Task<IActionResult> UpdatePassword ([FromBody] ForgotPasswordRequestDto forgotPasswordRequestDto)
-    {
-        var success = await userService.UpdatePasswordAsync(forgotPasswordRequestDto.Email, forgotPasswordRequestDto.NewPassword);
-
-        return Ok(new { message = "User Password updated successfully" });
-        
+        return success ? NoContent() : NotFound();
     }
 }

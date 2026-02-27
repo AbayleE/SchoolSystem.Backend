@@ -5,9 +5,9 @@ using SchoolSystem.Domain.Entities;
 
 namespace SchoolSystem.Backend.Controllers;
 
-[Authorize(Roles = "SystemOwner")]
 [ApiController]
-[Route("api/system-settings")]
+[Route("api/[controller]")]
+[Authorize(Roles = "SystemOwner")]
 public class SystemSettingsController(SystemSettingsService service) : ControllerBase
 {
     [HttpGet]

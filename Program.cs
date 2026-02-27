@@ -1,4 +1,4 @@
-using System.Net;
+
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
@@ -7,11 +7,15 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using SchoolSystem.Backend.Data;
+using SchoolSystem.Backend.Exceptions;
 using SchoolSystem.Backend.Interface;
 using SchoolSystem.Backend.Services;
 using SchoolSystem.Backend.Services.AuthService;
 using SchoolSystem.Backend.Services.BaseService;
 using SchoolSystem.Domain.Entities;
+using InvalidCredentialsException = SchoolSystem.Backend.Services.AuthService.InvalidCredentialsException;
+using InvalidInvitationException = SchoolSystem.Backend.Services.AuthService.InvalidInvitationException;
+using NotFoundException = SchoolSystem.Backend.Services.NotFoundException;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -105,7 +109,7 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddDbContext<SchoolDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// CRITICAL: BaseRepository needs DbContext, not SchoolDbContext
+// CRITICAL: TenantRepository needs DbContext, not SchoolDbContext
 builder.Services.AddScoped<DbContext, SchoolDbContext>();
 
 // ---------------------------------------------------------
@@ -117,8 +121,10 @@ builder.Services.AddScoped<ITenantContext, TenantContext>();
 // ---------------------------------------------------------
 // Generic Repository + Service
 // ---------------------------------------------------------
+builder.Services.AddScoped(typeof(TenantRepository<>));
 builder.Services.AddScoped(typeof(BaseRepository<>));
 builder.Services.AddScoped(typeof(BaseService<>));
+builder.Services.AddScoped(typeof(TenantService<>));
 
 // ---------------------------------------------------------
 // Tenant-scoped CRUD Services
@@ -135,7 +141,6 @@ builder.Services.AddScoped<InvitationService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<AssignmentService>();
 builder.Services.AddScoped<ApplicationService>();
-builder.Services.AddScoped<ApplicationServiceEnhanced>();
 builder.Services.AddScoped<ApplicationDocumentService>();
 builder.Services.AddScoped<FileResourceService>();
 builder.Services.AddScoped<TranscriptRequestService>();
@@ -146,12 +151,12 @@ builder.Services.AddScoped<ContactMessageService>();
 // ---------------------------------------------------------
 // Workflow services (depend on tenant-scoped services above)
 // ---------------------------------------------------------
-builder.Services.AddScoped<SchoolSystem.Backend.Services.Workflows.AssignmentWorkflowService>();
+//builder.Services.AddScoped<SchoolSystem.Backend.Services.Workflows.AssignmentService>();
 
 // ---------------------------------------------------------
 // System-level Services (NOT tenant-scoped)
 // ---------------------------------------------------------
-builder.Services.AddScoped<TenantService>();
+builder.Services.AddScoped<TenantManagementService>();
 builder.Services.AddScoped<SystemSettingsService>();
 
 // ---------------------------------------------------------
@@ -159,7 +164,6 @@ builder.Services.AddScoped<SystemSettingsService>();
 // ---------------------------------------------------------
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IAuthServiceEnhanced, AuthServiceEnhanced>();
 builder.Services.AddScoped<PasswordHasher<User>>();
 
 // ---------------------------------------------------------
@@ -177,15 +181,28 @@ app.UseExceptionHandler(err =>
 {
     err.Run(async ctx =>
     {
-        ctx.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+        var feature = ctx.Features.Get<IExceptionHandlerFeature>();
+        var exception = feature?.Error;
+        
         ctx.Response.ContentType = "application/json";
-        var ex = ctx.Features.Get<IExceptionHandlerFeature>()?.Error;
-        if (ex != null)
+        ctx.Response.StatusCode = exception switch
         {
-            var logger = ctx.RequestServices.GetRequiredService<ILogger<Program>>();
-            logger.LogError(ex, "Unhandled exception");
-            await ctx.Response.WriteAsJsonAsync(new { error = "An error occurred.", message = ex.Message });
-        }
+            NotFoundException => 404,
+            InvalidCredentialsException => 401,
+            InvalidInvitationException => 400,
+            UnauthorizedAccessException => 403,
+            TenantMismatchException => 403,
+            InvalidOperationException => 400,
+            _ => 500
+        };
+       
+    
+        await ctx.Response.WriteAsJsonAsync(new
+        {
+            error = exception?.Message ?? "An unexpected error occurred"
+            
+        });
+        
     });
 });
 

@@ -3,4 +3,4 @@ using SchoolSystem.Domain.Entities;
 
 namespace SchoolSystem.Backend.Services;
 
-public class ParentService(BaseRepository<Parent> repo) : BaseService<Parent>(repo);
+public class ParentService(TenantRepository<Parent> repo) : BaseService<Parent>(repo);

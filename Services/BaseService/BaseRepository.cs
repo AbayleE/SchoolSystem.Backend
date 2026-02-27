@@ -1,104 +1,99 @@
-using Microsoft.EntityFrameworkCore;
-using SchoolSystem.Backend.Interface;
+﻿using Microsoft.EntityFrameworkCore;
 using SchoolSystem.Domain.Interfaces;
 
 namespace SchoolSystem.Backend.Services.BaseService;
 
-public class BaseRepository<TEntity>(DbContext context, ITenantContext tenant)
-    where TEntity : class, IEntity, IHasTenant
+// Handles CRUD for entities that do NOT require tenant scoping
+// e.g. Application, AuditLog, ContactMessage, FileResource, SystemSettings
+
+
+public class BaseRepository<TEntity>(DbContext context)
+    where TEntity : class, IEntity
 {
     private readonly DbSet<TEntity> _dbSet = context.Set<TEntity>();
+    private readonly DbContext _context = context;
 
-    private void EnsureTenant()
+    public virtual Task<TEntity?> GetByIdAsync(Guid id)
     {
-        if (tenant.TenantId == Guid.Empty)
-            throw new InvalidOperationException("Tenant context is required for this operation.");
-    }
-
-    public Task<TEntity?> GetByIdAsync(Guid id)
-    {
-        EnsureTenant();
         return _dbSet
-            .Where(x => x.Id == id && x.TenantId == tenant.TenantId)
+            .Where(x => x.Id == id && !x.IsDeleted)
             .FirstOrDefaultAsync();
     }
 
-    public Task<List<TEntity>> GetAllAsync()
+    public virtual Task<List<TEntity>> GetAllAsync()
     {
-        EnsureTenant();
         return _dbSet
-            .Where(x => x.TenantId == tenant.TenantId)
+            .Where(x => !x.IsDeleted)
             .ToListAsync();
     }
 
-    public async Task<TEntity> AddAsync(TEntity entity)
+    public virtual async Task<TEntity> AddAsync(TEntity entity)
     {
-        EnsureTenant();
-        entity.TenantId = entity.TenantId == Guid.Empty 
-            ? tenant.TenantId 
-            : entity.TenantId;
         entity.Id = Guid.NewGuid();
-        
+        entity.CreatedAt = DateTime.UtcNow;
+        entity.UpdatedAt = DateTime.UtcNow;
         await _dbSet.AddAsync(entity);
-        await context.SaveChangesAsync();
+        await _context.SaveChangesAsync();
         return entity;
     }
 
-    public async Task<TEntity> UpdateAsync(TEntity entity)
+    public virtual async Task<TEntity> UpdateAsync(TEntity entity)
     {
-        EnsureTenant();
-        entity.TenantId = entity.TenantId == Guid.Empty 
-            ? tenant.TenantId 
-            : entity.TenantId;
+        entity.UpdatedAt = DateTime.UtcNow;
         _dbSet.Update(entity);
-        await context.SaveChangesAsync();
+        await _context.SaveChangesAsync();
         return entity;
     }
 
-    public async Task<bool> DeleteAsync(Guid id)
+    public virtual async Task<bool> DeleteAsync(Guid id)
     {
-        EnsureTenant();
         var entity = await GetByIdAsync(id);
         if (entity == null) return false;
 
-        _dbSet.Remove(entity);
-        await context.SaveChangesAsync();
+        entity.IsDeleted = true;
+        entity.DeletedAt = DateTime.UtcNow;
+        entity.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
         return true;
     }
 
-    public async Task<List<TEntity>> BulkDelete(List<TEntity> entities)
+    public virtual async Task<List<TEntity>> BulkAddAsync(List<TEntity> entities)
     {
-        EnsureTenant();
-        _dbSet.RemoveRange(entities);
-        await context.SaveChangesAsync();
-        return entities;
-    }
-
-    public async Task<List<TEntity>> BulkCreate(List<TEntity> entities)
-    {
-        EnsureTenant();
-        foreach (var e in entities) {
-            e.TenantId = e.TenantId == Guid.Empty 
-            ? tenant.TenantId 
-            : e.TenantId;
-            
+        foreach (var e in entities)
+        {
+            e.Id = Guid.NewGuid();
+            e.CreatedAt = DateTime.UtcNow;
+            e.UpdatedAt = DateTime.UtcNow;
         }
         await _dbSet.AddRangeAsync(entities);
-        await context.SaveChangesAsync();
+        await _context.SaveChangesAsync();
         return entities;
     }
 
-    public async Task<List<TEntity>> BulkUpdate(List<TEntity> entities)
+    public virtual async Task<List<TEntity>> BulkUpdateAsync(List<TEntity> entities)
     {
-        EnsureTenant();
-        foreach (var entity in entities)
+        foreach (var e in entities)
         {
-            entity.TenantId = entity.TenantId == Guid.Empty 
-                ? tenant.TenantId 
-                : entity.TenantId;
-            _dbSet.Update(entity);
+            e.UpdatedAt = DateTime.UtcNow;
+            _dbSet.Update(e);
         }
-        await context.SaveChangesAsync();
+        await _context.SaveChangesAsync();
         return entities;
+    }
+
+    public virtual async Task<bool> BulkDeleteAsync(List<Guid> ids)
+    {
+        var entities = await _dbSet
+            .Where(x => ids.Contains(x.Id) && !x.IsDeleted)
+            .ToListAsync();
+
+        foreach (var e in entities)
+        {
+            e.IsDeleted = true;
+            e.DeletedAt = DateTime.UtcNow;
+            e.UpdatedAt = DateTime.UtcNow;
+        }
+        await _context.SaveChangesAsync();
+        return true;
     }
 }

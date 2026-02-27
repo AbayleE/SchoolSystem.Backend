@@ -5,6 +5,6 @@ namespace SchoolSystem.Backend.Services.AuthService;
 
 public interface IAuthService
 {
-    Task<(User, string)> LoginAsync(LoginDto dto);
-    Task<(User, string)> RegisterWithInvitationAsync(RegisterWithInvitationDto dto);
+    Task<AuthResponseDto> LoginAsync(LoginDto dto);
+    Task<AuthResponseDto> RegisterWithInvitationAsync(RegisterWithInvitationDto dto);
 }
