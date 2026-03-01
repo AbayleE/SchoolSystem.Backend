@@ -16,7 +16,7 @@ public class TranscriptRequestsController(TranscriptRequestService service, Scho
 {
     // POST /api/transcriptrequests — student requests a transcript
     [Authorize(Roles = "Student")]
-    [HttpPost]
+    [HttpPost("request")]
     public async Task<IActionResult> RequestTranscript([FromBody] CreateTranscriptRequestDto dto)
     {
         var studentId = User.GetUserId();

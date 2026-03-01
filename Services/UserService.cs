@@ -72,8 +72,7 @@ public class UserService(
         logger.LogInformation("User {UserId} profile updated", userId);
         return user;
     }
-
-  
+    
     public async Task UpdatePasswordAsync(Guid userId, UpdatePasswordDto dto)
     {
         var user = await GetByIdAsync(userId)
@@ -114,5 +113,31 @@ public class UserService(
         await UpdateAsync(user);
 
         logger.LogInformation("User {UserId} active status set to {IsActive}", userId, isActive);
+    }
+    
+    public async Task <User> CreateAdminUserAsync(CreateAdminUserDto dto)
+    {
+        var tenantId = await context.Tenants.Where(tenant => tenant.Name == dto.Tenant).Select(tenant => tenant.Id).FirstAsync();
+        if(tenantId == Guid.Empty)
+                throw new NotFoundException("Tenant not found.");
+        var user = new User
+        {
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            Email = dto.Email,
+            Phone = dto.Phone,
+            Role = UserRole.SystemOwner,
+            Name = new FullName(dto.FirstName, dto.MiddleName!, dto.LastName),
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        
+        user.PasswordHash = _passwordHasher.HashPassword(user, dto.Password);
+      
+        await context.Users.AddAsync(user);
+        await context.SaveChangesAsync();
+        logger.LogInformation("Admin user {UserId} created for tenant {TenantId}", user.Id, tenantId);
+        
+        return user;
     }
 }

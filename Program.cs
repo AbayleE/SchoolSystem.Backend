@@ -23,7 +23,7 @@ var builder = WebApplication.CreateBuilder(args);
 // CORS
 // ---------------------------------------------------------
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ??
-                     ["http://127.0.0.1:5500"];
+                     ["http://localhost:3000"];
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
@@ -219,8 +219,7 @@ app.UseCors();
 
 app.UseAuthentication();
 app.UseAuthorization();
-
-app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
+app.MapControllers();
 
 //app.MapHealthChecks("/health", new HealthCheckOptions { ResponseWriter = AspNetCore.HealthChecks.UI.Client.UIResponseWriter.WriteHealthCheckUIResponse });
 

@@ -97,4 +97,12 @@ public class UsersController(UserService userService) : ControllerBase
         var success = await userService.DeleteUserAsync(id);
         return success ? NoContent() : NotFound();
     }
+    
+    [Authorize(Roles = "SystemOwner")]
+    [HttpPost("admin")]
+    public async Task<IActionResult> CreateAdminUser([FromBody] CreateAdminUserDto dto)
+    {
+        var user = await userService.CreateAdminUserAsync(dto);
+        return CreatedAtAction(nameof(GetUser), new { id = user.Id }, user);
+    }
 }

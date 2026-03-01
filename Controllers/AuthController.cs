@@ -27,7 +27,6 @@ public class AuthController(IAuthService authService) : ControllerBase
     }
 
     // POST /api/auth/logout 
-    [Authorize]
     [HttpPost("logout")]
     public IActionResult Logout()
         => Ok(new { message = "Logged out successfully" });

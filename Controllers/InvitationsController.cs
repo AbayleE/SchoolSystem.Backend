@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SchoolSystem.Backend.DTOs.Invitations;
@@ -18,7 +17,7 @@ public class InvitationsController(InvitationService invitationService, ITenantC
     public async Task<IActionResult> SendInvitation([FromBody] CreateInvitationDto dto)
     {
         var senderId = User.GetUserId();
-        var invitation = await invitationService.SendInvitationAsync(dto, senderId, tenant.TenantId);
+        var invitation = await invitationService.SendInvitationAsync(dto, tenant.TenantId, senderId);
         return Ok(new
         {
             invitation.Id,

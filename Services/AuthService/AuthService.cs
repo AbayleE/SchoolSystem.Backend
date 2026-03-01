@@ -55,6 +55,7 @@ public class AuthService(
             Name = new FullName(dto.FirstName, dto.MiddleName ?? "", dto.LastName),
             Email = invitation.Email,
             Role = invitation.Role,
+            Phone = dto.Phone,
             IsActive = true
         };
 

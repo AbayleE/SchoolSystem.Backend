@@ -11,6 +11,7 @@ public class InvitationService(
     SchoolDbContext context,
     EmailService emailService,
     NotificationService notificationService,
+    IConfiguration config,
     ILogger<InvitationService> logger,
     TenantRepository<Invitation> repo) : BaseService<Invitation>(repo)
 {
@@ -40,13 +41,14 @@ public class InvitationService(
             ExpiresAt = DateTime.UtcNow.AddDays(7),
             Used = false,
             SentByUserId = senderUserId,
-            SentByUser = sender
         };
 
         await AddAsync(invitation);
 
-       // await emailService.SendInvitationEmailAsync(sender.Email, invitation);
-       // await notificationService.CreateInvitationNotificationAsync(invitation);
+        var registrationLink = $"{config["App:BaseUrl"]}/pages/register.html?token={invitation.Token}";
+        await emailService.SendInvitationEmailAsync(sender.Email!,invitation, registrationLink);
+       
+        // await notificationService.CreateInvitationNotificationAsync(invitation);
         logger.LogInformation("Invitation sent to {Email} for role {Role} by user {SenderId}",
             dto.Email, dto.Role, senderUserId);
 
