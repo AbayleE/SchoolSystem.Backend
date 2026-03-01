@@ -70,16 +70,6 @@ public class UsersController(UserService userService) : ControllerBase
         return Ok(new { message = "User updated successfully", data = user });
     }
 
-    // PATCH /api/users/password — update own password
-    [Authorize]
-    [HttpPatch("password")]
-    public async Task<IActionResult> UpdatePassword([FromBody] UpdatePasswordDto dto)
-    {
-        var userId = User.GetUserId();
-        await userService.UpdatePasswordAsync(userId, dto);
-        return Ok(new { message = "Password updated successfully" });
-    }
-
     // PATCH /api/users/{id}/status — admin activates/deactivates user
     [Authorize(Roles = "SystemOwner, SchoolAdmin")]
     [HttpPatch("{id:guid}/status")]

@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using SchoolSystem.Backend.Data;
 using SchoolSystem.Backend.DTOs.Users;
-using SchoolSystem.Backend.Exceptions;
 using SchoolSystem.Backend.Interface;
 using SchoolSystem.Backend.Services.BaseService;
 using SchoolSystem.Domain.Entities;
@@ -15,16 +14,23 @@ public class UserService(
     TenantRepository<User> repo,
     SchoolDbContext context,
     ITenantContext tenantContext,
-    ILogger<UserService> logger)
+    PasswordHasher<User> passwordHasher,
+    ILogger<UserService> logger, EmailService emailService)
     : TenantService<User>(repo)
 {
-    private readonly PasswordHasher<User> _passwordHasher = new();
     
     public Task<List<User>> GetUsersAsync() => GetAllAsync();
 
     public async Task<User?> GetUserByIdAsync(Guid id)
     {
         return await GetByIdAsync(id);
+    }
+    
+    public async Task<User?> GetUserByEmailAsync(string email)
+    {
+        return await context.Users
+            .Where(u => u.TenantId == tenantContext.TenantId && u.Email == email && !u.IsDeleted)
+            .FirstOrDefaultAsync();
     }
     
     public async Task<List<User>> GetUsersByRoleAsync(UserRole role)
@@ -47,7 +53,7 @@ public class UserService(
         {
             user.Name = new FullName(
                 dto.FirstName ?? user.Name?.FirstName ?? "",
-                user.Name?.MiddleName ?? "",
+                dto.MiddleName ?? user.Name?.MiddleName ?? "",
                 dto.LastName ?? user.Name?.LastName ?? ""
             );
         }
@@ -73,35 +79,12 @@ public class UserService(
         return user;
     }
     
-    public async Task UpdatePasswordAsync(Guid userId, UpdatePasswordDto dto)
-    {
-        var user = await GetByIdAsync(userId)
-                   ?? throw new NotFoundException("User not found.");
-
-        var result = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, dto.CurrentPassword);
-        if (result == PasswordVerificationResult.Failed)
-            throw new InvalidCredentialsException("Current password is incorrect.");
-
-        user.PasswordHash = _passwordHasher.HashPassword(user, dto.NewPassword);
-        await UpdateAsync(user);
-
-        logger.LogInformation("User {UserId} password updated", userId);
-    }
     // Delete user (soft delete)
     public async Task<bool> DeleteUserAsync(Guid userId)
     {
         var deleted = await DeleteAsync(userId);
         if (deleted) logger.LogInformation("User {UserId} soft deleted", userId);
         return deleted;
-    }
-
-    public async Task<User?> ForgotPasswordAsync (string email, string newPassword )
-    {
-        var user = await context.Users.Where(user1 => user1.Email == email).FirstAsync();
-        user.PasswordHash = _passwordHasher.HashPassword(user, newPassword);
-
-        await context.SaveChangesAsync();
-        return user;
     }
     
     public async Task SetActiveStatusAsync(Guid userId, bool isActive)
@@ -132,7 +115,7 @@ public class UserService(
             UpdatedAt = DateTime.UtcNow
         };
         
-        user.PasswordHash = _passwordHasher.HashPassword(user, dto.Password);
+        user.PasswordHash = passwordHasher.HashPassword(user, dto.Password);
       
         await context.Users.AddAsync(user);
         await context.SaveChangesAsync();

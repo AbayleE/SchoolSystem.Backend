@@ -17,8 +17,6 @@ public class InvitationService(
 {
     public async Task<Invitation> SendInvitationAsync(CreateInvitationDto dto, Guid tenantId, Guid senderUserId)
     {
-        var token = Guid.NewGuid().ToString("N");
-
         var sender = await context.Users.FindAsync(senderUserId)?? throw new NotFoundException("Sender not found");
        
         var existingActive = await context.Invitations

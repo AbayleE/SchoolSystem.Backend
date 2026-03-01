@@ -9,7 +9,7 @@ namespace SchoolSystem.Backend.Controllers;
 [Route("api/[controller]")]
 public class EnrollmentsController(EnrollmentService service) : BaseController<Enrollment>(service)
 {
-    // POST /api/enrollments/check — check if student is in a class
+    // GET /api/enrollments/check — check if student is in a class
     [Authorize(Roles = "SystemOwner, SchoolAdmin, Manager, Teacher")]
     [HttpGet("check")]
     public async Task<IActionResult> CheckEnrollment(

@@ -1,6 +1,6 @@
-﻿using MailKit.Net.Smtp;
-using MailKit.Security;
+﻿using MailKit.Security;
 using MimeKit;
+using SchoolSystem.Backend.DTOs.Emails;
 using SchoolSystem.Domain.Entities;
 using SmtpClient = MailKit.Net.Smtp.SmtpClient;
 
@@ -8,15 +8,26 @@ namespace SchoolSystem.Backend.Services;
 
 public class EmailService(IConfiguration config, ILogger<EmailService> logger)
 {
-    public Task SendEmailAsync(string email, string subject, string message)
+    public Task SendEmailInternal(EmailMessageDto messageDto)
     {
-        throw new NotImplementedException();
+        var email = new MimeMessage();
+        email.From.Add(MailboxAddress.Parse((messageDto.From ?? config["EmailSettings:FromEmail"]) ?? throw new InvalidOperationException()));
+        email.To.Add(MailboxAddress.Parse(messageDto.To ?? throw new InvalidOperationException()));
+        
+        email.Subject = messageDto.Subject ?? "Notification from School System";
+        var bodyBuilder = new BodyBuilder
+        {
+            HtmlBody = messageDto.HtmlBody,
+            TextBody = messageDto.TextBody 
+        };
+        email.Body = bodyBuilder.ToMessageBody();
+        return SendEmailAsync(email);
     }
 
     public async Task SendInvitationEmailAsync(string fromEmail, Invitation invitation, string registrationLink)
     {
         var email = new MimeMessage();
-        email.From.Add(MailboxAddress.Parse(config["EmailSettings:FromEmail"] ?? throw new InvalidOperationException()));
+        email.From.Add(MailboxAddress.Parse(config["EmailSettings:FromEmail"] ?? fromEmail ?? throw new InvalidOperationException()));
         email.To.Add(MailboxAddress.Parse(invitation.Email ?? throw new InvalidOperationException()));
         
         email.Subject = "You're invited to join the School System";
@@ -46,15 +57,20 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger)
                         """
         };
         email.Body = bodyBuilder.ToMessageBody();
+        await SendEmailAsync(email);
+        
+        logger.LogInformation("Invitation email sent to {Email}", invitation.Email);
+    }
 
+    private async Task SendEmailAsync(MimeMessage mail)
+    {
         using var smtp = new SmtpClient();
         
         await smtp.ConnectAsync(config["EmailSettings:SmtpServer"],
             int.Parse(config["EmailSettings:Port"] ?? throw new InvalidOperationException()), SecureSocketOptions.StartTls);
         await smtp.AuthenticateAsync(config["EmailSettings:Username"], config["EmailSettings:Password"]);
-        await smtp.SendAsync(email);
+        await smtp.SendAsync(mail);
         await smtp.DisconnectAsync(true);
-        
-        logger.LogInformation("Invitation email sent to {Email}",fromEmail);
     }
+
 }

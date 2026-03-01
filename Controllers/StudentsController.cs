@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 using SchoolSystem.Backend.Data;
 using SchoolSystem.Backend.Interface;
 using SchoolSystem.Backend.Services;
-using SchoolSystem.Backend.Services.BaseService;
 using SchoolSystem.Domain.Entities;
 
 namespace SchoolSystem.Backend.Controllers;
@@ -19,7 +18,7 @@ public class StudentsController(StudentService service, SchoolDbContext context,
     public async Task<IActionResult> GetStudentParents(Guid id)
     {
         var parents = await context.StudentParents
-            .Where(sp => sp.StudentId == id && !sp.IsDeleted)
+            .Where(sp => sp.StudentId == id && !sp.IsDeleted && sp.TenantId == tenant.TenantId)
             .Include(sp => sp.Parent)
             .ThenInclude(p => p!.User)
             .ToListAsync();

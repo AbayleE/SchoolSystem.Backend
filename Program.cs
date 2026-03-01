@@ -1,4 +1,3 @@
-
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
@@ -13,8 +12,6 @@ using SchoolSystem.Backend.Services;
 using SchoolSystem.Backend.Services.AuthService;
 using SchoolSystem.Backend.Services.BaseService;
 using SchoolSystem.Domain.Entities;
-using InvalidCredentialsException = SchoolSystem.Backend.Services.AuthService.InvalidCredentialsException;
-using InvalidInvitationException = SchoolSystem.Backend.Services.AuthService.InvalidInvitationException;
 using NotFoundException = SchoolSystem.Backend.Services.NotFoundException;
 
 var builder = WebApplication.CreateBuilder(args);

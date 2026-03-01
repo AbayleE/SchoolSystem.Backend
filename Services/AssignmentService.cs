@@ -57,7 +57,7 @@ public class AssignmentService(
         await context.SaveChangesAsync();
     }
     
-    public async Task GradeSubmissionAsync (Guid teacherId, Guid submissionId, int score, string? feedback)
+    public async Task GradeSubmissionAsync (Guid teacherId, Guid submissionId, int score, string feedback)
     {
         var submission = await GetSubmissionAsync(submissionId);
 
@@ -71,7 +71,7 @@ public class AssignmentService(
         await SetSubmissionGrade(submissionId, score, feedback);
 
         await notificationService.NotifyStudentAsync(submission.StudentId,
-            $"Your assignment has been graded: {score}", feedback!);
+            $"Your assignment has been graded: {score}", feedback);
     }
 
     public async Task<List<AssignmentSubmission>> GetSubmissionsForAssignmentAsync(Guid assignmentId, Guid teacherId)
