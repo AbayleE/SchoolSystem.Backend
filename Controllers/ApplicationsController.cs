@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SchoolSystem.Backend.DTOs.Applications;
 using SchoolSystem.Backend.Extensions;
-using SchoolSystem.Backend.Interface;
 using SchoolSystem.Backend.Services;
 using SchoolSystem.Domain.Enums;
 
@@ -10,8 +9,7 @@ namespace SchoolSystem.Backend.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 public class ApplicationsController(
-    ApplicationService applicationService,
-    ILogger<ApplicationsController> logger) : ControllerBase
+    ApplicationService applicationService) : ControllerBase
 {
     // POST /api/applications/{academicYearId}
     // Public — no auth. TenantId resolved from subdomain middleware.

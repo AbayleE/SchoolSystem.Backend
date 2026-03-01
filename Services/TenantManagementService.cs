@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using SchoolSystem.Backend.Data;
 using SchoolSystem.Backend.DTOs.Tenants;
+using SchoolSystem.Backend.Exceptions;
 using SchoolSystem.Domain.Entities;
 using SchoolSystem.Domain.Enums;
 

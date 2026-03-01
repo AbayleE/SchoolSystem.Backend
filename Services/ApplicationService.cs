@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using SchoolSystem.Backend.Data;
 using SchoolSystem.Backend.DTOs.Applications;
+using SchoolSystem.Backend.Exceptions;
 using SchoolSystem.Backend.Interface;
 using SchoolSystem.Backend.Services.BaseService;
 using SchoolSystem.Domain.Entities;
@@ -8,7 +9,6 @@ using SchoolSystem.Domain.Enums;
 using SchoolSystem.Domain.ValueObjects;
 
 namespace SchoolSystem.Backend.Services;
-public class NotFoundException(string message) : Exception(message);
 
 public class ApplicationService(
     SchoolDbContext context,

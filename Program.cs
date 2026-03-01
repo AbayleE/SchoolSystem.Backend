@@ -12,7 +12,6 @@ using SchoolSystem.Backend.Services;
 using SchoolSystem.Backend.Services.AuthService;
 using SchoolSystem.Backend.Services.BaseService;
 using SchoolSystem.Domain.Entities;
-using NotFoundException = SchoolSystem.Backend.Services.NotFoundException;
 
 var builder = WebApplication.CreateBuilder(args);
 

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SchoolSystem.Backend.Data;
 using SchoolSystem.Backend.DTOs.TranscriptRequest;
+using SchoolSystem.Backend.Exceptions;
 using SchoolSystem.Backend.Extensions;
 using SchoolSystem.Backend.Interface;
 using SchoolSystem.Backend.Services;
@@ -11,7 +12,7 @@ using SchoolSystem.Domain.Enums;
 namespace SchoolSystem.Backend.Controllers;
 [ApiController]
 [Route("api/[controller]")]
-public class TranscriptRequestsController(TranscriptRequestService service, SchoolDbContext context, ITenantContext tenant)
+public class TranscriptRequestsController(TranscriptRequestService service, ITenantContext tenant)
     : BaseController<TranscriptRequest>(service)
 {
     // POST /api/transcriptrequests — student requests a transcript

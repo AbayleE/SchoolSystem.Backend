@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using SchoolSystem.Backend.Data;
 using SchoolSystem.Backend.DTOs.Users;
+using SchoolSystem.Backend.Exceptions;
 using SchoolSystem.Backend.Interface;
 using SchoolSystem.Backend.Services.BaseService;
 using SchoolSystem.Domain.Entities;

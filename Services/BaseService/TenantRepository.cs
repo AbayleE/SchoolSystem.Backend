@@ -15,6 +15,8 @@ public class TenantRepository<TEntity>(DbContext context, ITenantContext tenant)
     where TEntity : class, IEntity, IHasTenant
 {
     private readonly DbSet<TEntity> _dbSet = context.Set<TEntity>();
+    private readonly DbContext _context1 = context;
+
     private void EnsureTenant()
     {
         if (tenant.TenantId == Guid.Empty)
@@ -69,17 +71,19 @@ public class TenantRepository<TEntity>(DbContext context, ITenantContext tenant)
             e.TenantId = tenant.TenantId;
         return await base.BulkAddAsync(entities);
     }
-
+    
     public override async Task<List<TEntity>> BulkUpdateAsync(List<TEntity> entities)
     {
         EnsureTenant();
-        foreach (var e in entities)
-        {
-            var existing = await GetByIdAsync(e.Id);
-            if (existing == null)
-                throw new UnauthorizedAccessException($"Entity {e.Id} not found or does not belong to this tenant.");
-            e.TenantId = tenant.TenantId;
-        }
+        var ids = entities.Select(x => x.Id).ToList();
+        
+        var existingEntities = await _dbSet
+            .Where(x => ids.Contains(x.Id) && x.TenantId == tenant.TenantId && !x.IsDeleted)
+            .ToListAsync();
+        
+        if (existingEntities.Count != ids.Count)
+            throw new InvalidOperationException("One or more entities not found or belong to a different tenant.");
+  
         return await base.BulkUpdateAsync(entities);
     }
 
@@ -96,7 +100,7 @@ public class TenantRepository<TEntity>(DbContext context, ITenantContext tenant)
             e.DeletedAt = DateTime.UtcNow;
             e.UpdatedAt = DateTime.UtcNow;
         }
-        await context.SaveChangesAsync();
+        await _context1.SaveChangesAsync();
         return true;
     }
 }

@@ -10,6 +10,7 @@ namespace SchoolSystem.Backend.Controllers;
 public class BaseController<TEntity>(TenantService<TEntity> service) : ControllerBase
     where TEntity : class, IEntity, IHasTenant
 {
+    [Authorize]
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> Get(Guid id)
     {
@@ -18,12 +19,14 @@ public class BaseController<TEntity>(TenantService<TEntity> service) : Controlle
     }
     
     [HttpGet]
+    [Authorize]
     public async Task<IActionResult> GetAll()
     {
         return Ok(await service.GetAllAsync());
     }
     
     [HttpPost]
+    [Authorize]
     public async Task<IActionResult> Create([FromBody] TEntity entity)
     {
         var created = await service.AddAsync(entity);
@@ -31,6 +34,7 @@ public class BaseController<TEntity>(TenantService<TEntity> service) : Controlle
     }
     
     [HttpPut("{id:guid}")]
+    [Authorize]
     public async Task<IActionResult> Update(Guid id, [FromBody] TEntity entity)
     {
         if (id != entity.Id)
@@ -40,20 +44,24 @@ public class BaseController<TEntity>(TenantService<TEntity> service) : Controlle
     }
     
     [HttpDelete("{id:guid}")]
+    [Authorize]
     public async Task<IActionResult> Delete(Guid id)
     {
         return await service.DeleteAsync(id) ? NoContent() : NotFound();
     }
     
     [HttpPost("bulk")]
+    [Authorize]
     public async Task<IActionResult> BulkCreate([FromBody] List<TEntity> entities)
         => Ok(await service.BulkAddAsync(entities));
 
     [HttpPut("bulk")]
+    [Authorize]
     public async Task<IActionResult> BulkUpdate([FromBody] List<TEntity> entities)
         => Ok(await service.BulkUpdateAsync(entities));
 
     [HttpDelete("bulk")]
+    [Authorize]
     public async Task<IActionResult> BulkDelete([FromBody] List<Guid> ids)  
         => await service.BulkDeleteAsync(ids) ? NoContent() : NotFound();
 }

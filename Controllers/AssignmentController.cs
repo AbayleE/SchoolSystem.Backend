@@ -35,7 +35,7 @@ public class AssignmentController(AssignmentService service, FileResourceService
         [FromBody] GradeSubmissionDto dto)
     {
         var teacherId = User.GetUserId();
-        await service.GradeSubmissionAsync(teacherId, submissionId, dto.Score, dto.Feedback);
+        await service.GradeSubmissionAsync(teacherId, submissionId, dto.Score, dto.Feedback!);
         return Ok(new { message = "Submission graded successfully." });
     }
 
@@ -67,6 +67,9 @@ public class AssignmentController(AssignmentService service, FileResourceService
         var requesterRole = User.GetUserRole();
 
         var submission = await service.GetSubmissionAsync(submissionId);
+        
+        if(submission == null)
+            return NotFound();
 
         // Students can only view their own submissions
         if (requesterRole == "Student" && submission.StudentId != requesterId)

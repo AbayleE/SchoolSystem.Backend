@@ -30,7 +30,7 @@ public class AuthService(
         if (!user.IsActive)
             throw new InvalidCredentialsException("This account has been deactivated");
   
-        var result = passwordHasher.VerifyHashedPassword(user, user.PasswordHash, dto.Password);
+        var result = passwordHasher.VerifyHashedPassword(user, user.PasswordHash ?? throw new InvalidOperationException(), dto.Password);
 
         if (result == PasswordVerificationResult.Failed)
             throw new InvalidCredentialsException("Invalid credentials");

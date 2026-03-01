@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using SchoolSystem.Backend.Data;
 using SchoolSystem.Backend.DTOs.Invitations;
+using SchoolSystem.Backend.Exceptions;
 using SchoolSystem.Backend.Services.BaseService;
 using SchoolSystem.Domain.Entities;
 using SchoolSystem.Domain.Enums;

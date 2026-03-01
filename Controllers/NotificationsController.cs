@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SchoolSystem.Backend.Data;
 using SchoolSystem.Backend.DTOs.Notifications;
+using SchoolSystem.Backend.Exceptions;
 using SchoolSystem.Backend.Extensions;
 using SchoolSystem.Backend.Interface;
 using SchoolSystem.Backend.Services;
