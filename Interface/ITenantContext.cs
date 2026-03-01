@@ -1,4 +1,4 @@
-﻿namespace SchoolSystem.Backend.Interface;
+namespace SchoolSystem.Backend.Interface;
 
 public interface ITenantContext
 {
@@ -7,13 +7,18 @@ public interface ITenantContext
 
 public class TenantContext : ITenantContext
 {
-    public TenantContext(IHttpContextAccessor accessor)
+    public TenantContext(IHttpContextAccessor accessor, ILogger<TenantContext> logger)
     {
-        var claim = accessor.HttpContext?.User?.FindFirst("TenantId")?.Value;
+        var http = accessor.HttpContext;
+            var claim = http?.User?.FindFirst("tenantId")?.Value ??      
+                        http?.User?.FindFirst("TenantId")?.Value ??     
+                        http?.User?.FindFirst("tenant_id")?.Value ??    
+                        http?.User?.FindFirst("tid")?.Value;
         if (claim == null)
-            throw new Exception("TenantId missing from JWT");
-
-        TenantId = Guid.Parse(claim);
+        {
+           logger.LogDebug("Claim not found");
+        }
+        TenantId = Guid.TryParse(claim, out var id) ? id : Guid.Empty;
     }
 
     public Guid TenantId { get; }

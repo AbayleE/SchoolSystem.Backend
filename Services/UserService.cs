@@ -2,58 +2,126 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using SchoolSystem.Backend.Data;
 using SchoolSystem.Backend.DTOs.Users;
+using SchoolSystem.Backend.Exceptions;
+using SchoolSystem.Backend.Interface;
 using SchoolSystem.Backend.Services.BaseService;
 using SchoolSystem.Domain.Entities;
 using SchoolSystem.Domain.Enums;
+using SchoolSystem.Domain.ValueObjects;
 
 namespace SchoolSystem.Backend.Services;
 
-public class UserService(SchoolDbContext context, ILogger<UserService> logger, BaseRepository<User> repo)
-    : BaseService<User>(repo)
+public class UserService(
+    TenantRepository<User> repo,
+    SchoolDbContext context,
+    ITenantContext tenantContext,
+    PasswordHasher<User> passwordHasher,
+    ILogger<UserService> logger, EmailService emailService)
+    : TenantService<User>(repo)
 {
-    private readonly PasswordHasher<User> _passwordHasher = new();
+    
+    public Task<List<User>> GetUsersAsync() => GetAllAsync();
 
     public async Task<User?> GetUserByIdAsync(Guid id)
     {
-        return await context.Users.FindAsync(id);
+        return await GetByIdAsync(id);
     }
-
-    public async Task<List<User>> GetUsersByTenantAsync(Guid tenantId)
+    
+    public async Task<User?> GetUserByEmailAsync(string email)
     {
         return await context.Users
-            .Where(u => u.TenantId == tenantId)
+            .Where(u => u.TenantId == tenantContext.TenantId && u.Email == email && !u.IsDeleted)
+            .FirstOrDefaultAsync();
+    }
+    
+    public async Task<List<User>> GetUsersByRoleAsync(UserRole role)
+    {
+        return await context.Users
+            .Where(u =>
+                u.TenantId == tenantContext.TenantId &&
+                u.Role == role &&
+                !u.IsDeleted)
             .ToListAsync();
     }
-
-
-    public async Task<User> CreateUserAsync(CreateUserDto dto)
+    
+    // Update user profile information
+    public async Task<User> UpdateUserAsync(Guid userId, UpdateUserDto dto)
     {
-        var tenantExists = await context.Tenants.AnyAsync(t => t.Id == dto.TenantId);
-        if (!tenantExists)
-            throw new Exception("Tenant not found");
+        var user = await GetByIdAsync(userId)
+                   ?? throw new NotFoundException("User not found.");
 
-        var emailExists = await context.Users.AnyAsync(u => u.Email == dto.Email);
-        if (emailExists)
-            throw new Exception("Email already registered");
+        if (!string.IsNullOrWhiteSpace(dto.FirstName) || !string.IsNullOrWhiteSpace(dto.LastName))
+        {
+            user.Name = new FullName(
+                dto.FirstName ?? user.Name?.FirstName ?? "",
+                dto.MiddleName ?? user.Name?.MiddleName ?? "",
+                dto.LastName ?? user.Name?.LastName ?? ""
+            );
+        }
 
+        if (!string.IsNullOrWhiteSpace(dto.Phone))
+            user.Phone = dto.Phone;
+
+        // Only update address if any address field is provided
+        if (dto.Region != null || dto.City != null || dto.SubCity != null ||
+            dto.Woreda != null || dto.HouseNumber != null)
+        {
+            user.Address = new Address(
+                dto.Region ?? user.Address?.Region ?? "",
+                dto.City ?? user.Address?.City ?? "",
+                dto.SubCity ?? user.Address?.SubCity ?? "",
+                dto.Woreda ?? user.Address?.Woreda ?? "",
+                dto.HouseNumber ?? user.Address?.HouseNumber ?? ""
+            );
+        }
+
+        await UpdateAsync(user);
+        logger.LogInformation("User {UserId} profile updated", userId);
+        return user;
+    }
+    
+    // Delete user (soft delete)
+    public async Task<bool> DeleteUserAsync(Guid userId)
+    {
+        var deleted = await DeleteAsync(userId);
+        if (deleted) logger.LogInformation("User {UserId} soft deleted", userId);
+        return deleted;
+    }
+    
+    public async Task SetActiveStatusAsync(Guid userId, bool isActive)
+    {
+        var user = await GetByIdAsync(userId)
+                   ?? throw new NotFoundException("User not found.");
+
+        user.IsActive = isActive;
+        await UpdateAsync(user);
+
+        logger.LogInformation("User {UserId} active status set to {IsActive}", userId, isActive);
+    }
+    
+    public async Task <User> CreateAdminUserAsync(CreateAdminUserDto dto)
+    {
+        var tenantId = await context.Tenants.Where(tenant => tenant.Name == dto.Tenant).Select(tenant => tenant.Id).FirstAsync();
+        if(tenantId == Guid.Empty)
+                throw new NotFoundException("Tenant not found.");
         var user = new User
         {
             Id = Guid.NewGuid(),
-            TenantId = dto.TenantId,
-            Name = dto.Name,
+            TenantId = tenantId,
             Email = dto.Email,
             Phone = dto.Phone,
-            Role = Enum.Parse<UserRole>(dto.Role),
-            CreatedAt = DateTime.UtcNow
+            Role = UserRole.SystemOwner,
+            Name = new FullName(dto.FirstName, dto.MiddleName!, dto.LastName),
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
         };
-
-        user.PasswordHash = _passwordHasher.HashPassword(user, dto.Password);
-
-        context.Users.Add(user);
+        
+        user.PasswordHash = passwordHasher.HashPassword(user, dto.Password);
+      
+        await context.Users.AddAsync(user);
         await context.SaveChangesAsync();
-
-        logger.LogInformation("User created with ID {Id}", user.Id);
-
+        logger.LogInformation("Admin user {UserId} created for tenant {TenantId}", user.Id, tenantId);
+        
         return user;
     }
 }

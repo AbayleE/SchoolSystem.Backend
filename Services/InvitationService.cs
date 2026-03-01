@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using SchoolSystem.Backend.Data;
 using SchoolSystem.Backend.DTOs.Invitations;
+using SchoolSystem.Backend.Exceptions;
 using SchoolSystem.Backend.Services.BaseService;
 using SchoolSystem.Domain.Entities;
 using SchoolSystem.Domain.Enums;
@@ -11,36 +12,44 @@ public class InvitationService(
     SchoolDbContext context,
     EmailService emailService,
     NotificationService notificationService,
+    IConfiguration config,
     ILogger<InvitationService> logger,
-    BaseRepository<Invitation> repo) : BaseService<Invitation>(repo)
+    TenantRepository<Invitation> repo) : BaseService<Invitation>(repo)
 {
-    public async Task<Invitation> CreateInvitationAsync(CreateInvitationDto dto)
+    public async Task<Invitation> SendInvitationAsync(CreateInvitationDto dto, Guid tenantId, Guid senderUserId)
     {
-        var token = Guid.NewGuid().ToString("N");
-
-        var sender = await context.Users.FirstOrDefaultAsync(u => u.Id == dto.SenderId);
-        if ( sender == null || sender.Email == null )
-            throw new Exception("Sender not found");
+        var sender = await context.Users.FindAsync(senderUserId)?? throw new NotFoundException("Sender not found");
+       
+        var existingActive = await context.Invitations
+            .AnyAsync(i =>
+                i.TenantId == tenantId &&
+                i.Email == dto.Email &&
+                i.Role == dto.Role &&
+                !i.Used &&
+                i.ExpiresAt > DateTime.UtcNow);
+        
+        if (existingActive)
+            throw new InvalidOperationException($"An active invitation for {dto.Email} with role {dto.Role} already exists.");
 
         var invitation = new Invitation
         {
-            Id = Guid.NewGuid(),
-            TenantId = dto.TenantId,
+            TenantId = tenantId,
             Email = dto.Email,
-            Role = Enum.Parse<UserRole>(dto.Role),
-            Token = token,
+            Role = dto.Role,
+            Token = Guid.NewGuid().ToString("N"),
             ExpiresAt = DateTime.UtcNow.AddDays(7),
             Used = false,
-            SentByUserId = dto.SenderId,
-            SentByRole = Enum.Parse<UserRole>(dto.SenderRole),
-            SendByEmail = dto.SenderEmail
+            SentByUserId = senderUserId,
         };
 
-        context.Invitations.Add(invitation);
-        await context.SaveChangesAsync();
+        await AddAsync(invitation);
 
-       // await emailService.SendInvitationEmailAsync(sender.Email, invitation);
+        var registrationLink = $"{config["App:BaseUrl"]}/pages/register.html?token={invitation.Token}";
+        await emailService.SendInvitationEmailAsync(sender.Email!,invitation, registrationLink);
+       
         // await notificationService.CreateInvitationNotificationAsync(invitation);
+        logger.LogInformation("Invitation sent to {Email} for role {Role} by user {SenderId}",
+            dto.Email, dto.Role, senderUserId);
 
         return invitation;
     }
@@ -53,12 +62,18 @@ public class InvitationService(
             .FirstOrDefaultAsync(i => i.Token == token && !i.Used && i.ExpiresAt > DateTime.UtcNow);
     }
 
+    public Task<List<Invitation>> GetAllInvitationsAsync() => GetAllAsync();
 
-    public async Task<List<Invitation>> GetInvitationsByTenantAsync(Guid id)
+    public async Task RevokeInvitationAsync(Guid invitationId)
     {
-        logger.LogInformation("Getting invitations by tenant {id}", id);
-        return await context.Invitations
-            .Where(u => u.TenantId == id)
-            .ToListAsync();
+        var invitation = await GetByIdAsync(invitationId)
+                         ?? throw new NotFoundException("Invitation not found.");
+
+        if (invitation.Used)
+            throw new InvalidOperationException("Cannot revoke an invitation that has already been used.");
+
+        await DeleteAsync(invitationId);
+
+        logger.LogInformation("Invitation {InvitationId} revoked", invitationId);
     }
 }

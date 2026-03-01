@@ -7,45 +7,61 @@ namespace SchoolSystem.Backend.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class BaseController<TEntity>(BaseService<TEntity> service) : ControllerBase
+public class BaseController<TEntity>(TenantService<TEntity> service) : ControllerBase
     where TEntity : class, IEntity, IHasTenant
 {
+    [Authorize]
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> Get(Guid id)
     {
         var result = await service.GetByIdAsync(id);
         return result == null ? NotFound() : Ok(result);
     }
-
-    [Authorize(Roles = "SystemOwner, Manager, SchoolAdmin")]
+    
     [HttpGet]
+    [Authorize]
     public async Task<IActionResult> GetAll()
     {
         return Ok(await service.GetAllAsync());
     }
-
-    [Authorize(Roles = "SystemOwner, Manager, SchoolAdmin")]
+    
     [HttpPost]
+    [Authorize]
     public async Task<IActionResult> Create([FromBody] TEntity entity)
     {
         var created = await service.AddAsync(entity);
         return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
     }
     
-    [Authorize(Roles = "SystemOwner, Manager, SchoolAdmin")]
     [HttpPut("{id:guid}")]
+    [Authorize]
     public async Task<IActionResult> Update(Guid id, [FromBody] TEntity entity)
     {
         if (id != entity.Id)
-            return BadRequest("ID mismatch");
-
+            return BadRequest(new { message = "ID mismatch" });
+        
         return Ok(await service.UpdateAsync(entity));
     }
-
-    [Authorize(Roles = "SystemOwner, Manager, SchoolAdmin")]
+    
     [HttpDelete("{id:guid}")]
+    [Authorize]
     public async Task<IActionResult> Delete(Guid id)
     {
         return await service.DeleteAsync(id) ? NoContent() : NotFound();
     }
+    
+    [HttpPost("bulk")]
+    [Authorize]
+    public async Task<IActionResult> BulkCreate([FromBody] List<TEntity> entities)
+        => Ok(await service.BulkAddAsync(entities));
+
+    [HttpPut("bulk")]
+    [Authorize]
+    public async Task<IActionResult> BulkUpdate([FromBody] List<TEntity> entities)
+        => Ok(await service.BulkUpdateAsync(entities));
+
+    [HttpDelete("bulk")]
+    [Authorize]
+    public async Task<IActionResult> BulkDelete([FromBody] List<Guid> ids)  
+        => await service.BulkDeleteAsync(ids) ? NoContent() : NotFound();
 }

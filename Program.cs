@@ -1,10 +1,12 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using SchoolSystem.Backend.Data;
+using SchoolSystem.Backend.Exceptions;
 using SchoolSystem.Backend.Interface;
 using SchoolSystem.Backend.Services;
 using SchoolSystem.Backend.Services.AuthService;
@@ -14,10 +16,40 @@ using SchoolSystem.Domain.Entities;
 var builder = WebApplication.CreateBuilder(args);
 
 // ---------------------------------------------------------
+// CORS
+// ---------------------------------------------------------
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ??
+                     ["http://localhost:3000"];
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins(allowedOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
+
+
+// ---------------------------------------------------------
+// Health checks
+// ---------------------------------------------------------
+builder.Services.AddHealthChecks()
+    .AddNpgSql(
+        builder.Configuration.GetConnectionString("DefaultConnection") ??
+        throw new InvalidOperationException("ConnectionStrings:DefaultConnection is required"),
+        name: "database");
+
+// ---------------------------------------------------------
 // JWT Authentication
 // ---------------------------------------------------------
 var jwtSetting = builder.Configuration.GetSection("Jwt");
-var key = Encoding.UTF8.GetBytes(jwtSetting["Key"]!);
+var jwtKey = jwtSetting["Key"];
+if (string.IsNullOrEmpty(jwtKey))
+    throw new InvalidOperationException(
+        "Jwt:Key is required. Set it in appsettings, User Secrets, or environment (Jwt__Key).");
+var key = Encoding.UTF8.GetBytes(jwtKey);
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -73,7 +105,7 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddDbContext<SchoolDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// CRITICAL: BaseRepository needs DbContext, not SchoolDbContext
+// CRITICAL: TenantRepository needs DbContext, not SchoolDbContext
 builder.Services.AddScoped<DbContext, SchoolDbContext>();
 
 // ---------------------------------------------------------
@@ -85,8 +117,10 @@ builder.Services.AddScoped<ITenantContext, TenantContext>();
 // ---------------------------------------------------------
 // Generic Repository + Service
 // ---------------------------------------------------------
+builder.Services.AddScoped(typeof(TenantRepository<>));
 builder.Services.AddScoped(typeof(BaseRepository<>));
 builder.Services.AddScoped(typeof(BaseService<>));
+builder.Services.AddScoped(typeof(TenantService<>));
 
 // ---------------------------------------------------------
 // Tenant-scoped CRUD Services
@@ -101,17 +135,24 @@ builder.Services.AddScoped<EnrollmentService>();
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<InvitationService>();
 builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<AssignmentService>();
 builder.Services.AddScoped<ApplicationService>();
 builder.Services.AddScoped<ApplicationDocumentService>();
 builder.Services.AddScoped<FileResourceService>();
 builder.Services.AddScoped<TranscriptRequestService>();
 builder.Services.AddScoped<AcademicYearService>();
 builder.Services.AddScoped<TermService>();
+builder.Services.AddScoped<ContactMessageService>();
+
+// ---------------------------------------------------------
+// Workflow services (depend on tenant-scoped services above)
+// ---------------------------------------------------------
+//builder.Services.AddScoped<SchoolSystem.Backend.Services.Workflows.AssignmentService>();
 
 // ---------------------------------------------------------
 // System-level Services (NOT tenant-scoped)
 // ---------------------------------------------------------
-builder.Services.AddScoped<TenantService>();
+builder.Services.AddScoped<TenantManagementService>();
 builder.Services.AddScoped<SystemSettingsService>();
 
 // ---------------------------------------------------------
@@ -130,16 +171,52 @@ builder.Services.AddEndpointsApiExplorer();
 var app = builder.Build();
 
 // ---------------------------------------------------------
+// Global exception handling
+// ---------------------------------------------------------
+app.UseExceptionHandler(err =>
+{
+    err.Run(async ctx =>
+    {
+        var feature = ctx.Features.Get<IExceptionHandlerFeature>();
+        var exception = feature?.Error;
+        
+        ctx.Response.ContentType = "application/json";
+        ctx.Response.StatusCode = exception switch
+        {
+            NotFoundException => 404,
+            InvalidCredentialsException => 401,
+            InvalidInvitationException => 400,
+            UnauthorizedAccessException => 403,
+            TenantMismatchException => 403,
+            InvalidOperationException => 400,
+            _ => 500
+        };
+       
+    
+        await ctx.Response.WriteAsJsonAsync(new
+        {
+            error = exception?.Message ?? "An unexpected error occurred"
+            
+        });
+        
+    });
+});
+
+// ---------------------------------------------------------
 // Middleware
 // ---------------------------------------------------------
 app.UseSwagger();
 app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
+app.UseRouting();
+
+app.UseCors();
 
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
+
+//app.MapHealthChecks("/health", new HealthCheckOptions { ResponseWriter = AspNetCore.HealthChecks.UI.Client.UIResponseWriter.WriteHealthCheckUIResponse });
 
 app.Run();

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SchoolSystem.Domain.Entities;
+using SchoolSystem.Domain.ValueObjects;
 
 namespace SchoolSystem.Backend.Data;
 
@@ -18,20 +19,26 @@ public class SchoolDbContext(DbContextOptions<SchoolDbContext> options) : DbCont
     public DbSet<Enrollment> Enrollments { get; set; }
     public DbSet<Grade> Grades { get; set; }
     public DbSet<Parent> Parents { get; set; }
+    public DbSet<Teacher> Teachers { get; set; }
     public DbSet<SchoolSettings> SchoolSettings { get; set; }
+    public DbSet<AuditLog> AuditLogs { get; set; }
+    public DbSet<Assignment> Assignments { get; set; }
+    public DbSet<AssignmentSubmission> AssignmentSubmissions { get; set; }
     public DbSet<Invitation> Invitations { get; set; }
     public DbSet<Notification> Notifications { get; set; }
+    public DbSet<GradeLevel> GradeLevels { get; set; }
     public DbSet<SystemSettings> SystemSettings { get; set; }
     public DbSet<FileResource> FileResources { get; set; }
+    public DbSet<StudentParent> StudentParents { get; set; }
     public DbSet<TranscriptRequest> TranscriptRequests { get; set; }
+    public DbSet<ContactMessage> ContactMessages { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Application value objects
         modelBuilder.Entity<Application>().OwnsOne(a => a.StudentName);
-        modelBuilder.Entity<Application>().OwnsOne(a => a.ParentName);
-        modelBuilder.Entity<Application>().OwnsOne(a => a.Parent2Name);
         modelBuilder.Entity<Application>().OwnsOne(a => a.Address);
+        modelBuilder.Entity<Application>().OwnsMany<Guardian>(a => a.Guardians);
 
         // User value object
         modelBuilder.Entity<User>().OwnsOne(u => u.Name);

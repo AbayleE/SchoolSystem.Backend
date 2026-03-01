@@ -1,8 +1,6 @@
-﻿using SchoolSystem.Backend.Data;
+﻿using SchoolSystem.Backend.Services.BaseService;
+using SchoolSystem.Domain.Entities;
 
 namespace SchoolSystem.Backend.Services;
 
-public class TranscriptRequestService(SchoolDbContext context)
-{
-    private readonly SchoolDbContext _context = context;
-}
+public class TranscriptRequestService(TenantRepository<TranscriptRequest> repo) : TenantService<TranscriptRequest>(repo);

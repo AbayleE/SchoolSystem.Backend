@@ -3,4 +3,4 @@ using SchoolSystem.Domain.Entities;
 
 namespace SchoolSystem.Backend.Controllers;
 
-public class AcademicYearController(BaseService<AcademicYear> service) : BaseController<AcademicYear>(service);
+public class AcademicYearController(TenantService<AcademicYear> service) : BaseController<AcademicYear>(service);

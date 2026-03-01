@@ -1,48 +1,44 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SchoolSystem.Backend.DTOs.Invitations;
+using SchoolSystem.Backend.Extensions;
+using SchoolSystem.Backend.Interface;
 using SchoolSystem.Backend.Services;
 
 namespace SchoolSystem.Backend.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class InvitationsController(InvitationService invitationService) : ControllerBase
+public class InvitationsController(InvitationService invitationService, ITenantContext tenant) : ControllerBase
 {
+    // POST /api/invitations
+    [Authorize(Roles = "SystemOwner, SchoolAdmin, Manager")]
     [HttpPost]
-    [Authorize(Roles = "SchoolAdmin,Manager,SystemOwner")]
-    public async Task<IActionResult> PostInvitation(CreateInvitationDto dto)
+    public async Task<IActionResult> SendInvitation([FromBody] CreateInvitationDto dto)
     {
-        // Extract sender info from JWT
-        var senderId = User.FindFirst("UserId")?.Value;
-        var senderRole = User.FindFirst(ClaimTypes.Role)?.Value;
-
-        if (senderId == null || senderRole == null)
-            return Unauthorized("Invalid token");
-
-        var invitation = await invitationService.CreateInvitationAsync(dto);
+        var senderId = User.GetUserId();
+        var invitation = await invitationService.SendInvitationAsync(dto, tenant.TenantId, senderId);
         return Ok(new
         {
             invitation.Id,
-            invitation.Token,
             invitation.Email,
             invitation.Role,
             invitation.ExpiresAt
         });
     }
+    
+    // GET /api/invitations — all invitations for this tenant
+    [Authorize(Roles = "SystemOwner, SchoolAdmin, Manager")]
+    [HttpGet]
+    public async Task<IActionResult> GetInvitations()
+        => Ok(await invitationService.GetAllInvitationsAsync());
 
-    [HttpGet("token/{token}")]
-    public async Task<IActionResult> GetInvitationByToken(string token)
+    // DELETE /api/invitations/{id} — revoke
+    [Authorize(Roles = "SystemOwner, SchoolAdmin, Manager")]
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> RevokeInvitation(Guid id)
     {
-        var invitation = await invitationService.GetInvitationByTokenAsync(token);
-        if (invitation == null)
-            return NotFound("Invalid or expired invitation");
-        return Ok(new
-        {
-            invitation.Email,
-            Role = invitation.Role.ToString(),
-            invitation.TenantId
-        });
+        await invitationService.RevokeInvitationAsync(id);
+        return NoContent();
     }
 }
