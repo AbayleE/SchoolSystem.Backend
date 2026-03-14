@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OData.Query;
+using Microsoft.AspNetCore.OData.Routing.Controllers;
 using SchoolSystem.Backend.Services.BaseService;
 using SchoolSystem.Domain.Interfaces;
 
@@ -7,11 +9,18 @@ namespace SchoolSystem.Backend.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class BaseController<TEntity>(TenantService<TEntity> service) : ControllerBase
+public class BaseController<TEntity>(TenantService<TEntity> service) : ODataController
     where TEntity : class, IEntity, IHasTenant
 {
+    
+    [HttpGet("query")]
+    [Authorize]
+    [EnableQuery(PageSize = 100, MaxExpansionDepth = 3)]
+    public IQueryable<TEntity> Query() => service.GetQueryable();
+  
     [Authorize]
     [HttpGet("{id:guid}")]
+    
     public async Task<IActionResult> Get(Guid id)
     {
         var result = await service.GetByIdAsync(id);

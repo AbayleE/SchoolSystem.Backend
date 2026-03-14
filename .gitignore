@@ -1,4 +1,6 @@
 bin
 obj
-Migrations
 files
+appsettings.json
+appsettings.Development.json
+

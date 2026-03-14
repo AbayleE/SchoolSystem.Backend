@@ -5,4 +5,5 @@ public class CreateTenantDto
     public required string Name { get; set; }
     public string? Subdomain { get; set; }
     public string? LogoUrl { get; set; }
+    public bool IsSchool { get; set; } 
 }

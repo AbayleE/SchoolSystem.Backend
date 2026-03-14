@@ -8,6 +8,7 @@ using SchoolSystem.Backend.Services.BaseService;
 using SchoolSystem.Domain.Entities;
 using SchoolSystem.Domain.Enums;
 using SchoolSystem.Domain.ValueObjects;
+using SchoolSystem.Backend.Services.AuthService;
 
 namespace SchoolSystem.Backend.Services;
 
@@ -124,4 +125,70 @@ public class UserService(
         
         return user;
     }
+
+    public async Task<List<User>> CreateUsersBulk(List<CreateUserDto> dtos)
+    {
+        var users = new List<User>();
+
+        foreach (var dto in dtos)
+        {
+            var user = new User
+            {
+                Id = Guid.NewGuid(),
+                TenantId = new Guid(dto.TenantId),
+                Email = dto.Email,
+                Phone = dto.Phone,
+                Role = (UserRole)int.Parse(dto.Role),
+                Name = new FullName(dto.FirstName, "", dto.LastName)
+            };
+          CreateRoleProfile(user);
+            users.Add(user);
+        }
+
+        await context.Users.AddRangeAsync(users);
+        await context.SaveChangesAsync();
+
+        return users;
+    }
+    
+    public void CreateRoleProfile(User user)
+    {
+        switch (user.Role)
+        {
+            case UserRole.Teacher:
+                context.Teachers.Add(new Teacher
+                {
+                    TenantId = user.TenantId,
+                    UserId = user.Id,
+                    Status = TeacherStatus.Active
+                });
+                break;
+
+            case UserRole.Parent:
+                context.Parents.Add(new Parent
+                {
+                    TenantId = user.TenantId,
+                    UserId = user.Id
+                });
+                break;
+
+            case UserRole.Student:
+                var existingProfile = context.Students
+                    .FirstOrDefault(s =>
+                        s.TenantId == user.TenantId &&
+                        s.UserId == Guid.Empty);
+
+                if (existingProfile != null)
+                    existingProfile.UserId = user.Id;
+                else
+                    context.Students.Add(new Student
+                    {
+                        TenantId = user.TenantId,
+                        UserId = user.Id,
+                        Status = StudentStatus.Active
+                    });
+                break;
+        }
+    }
+
 }

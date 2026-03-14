@@ -973,6 +973,9 @@ namespace SchoolSystem.Backend.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsSchool")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("LogoUrl")
                         .HasColumnType("text");
 

@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OData.Query;
 using SchoolSystem.Backend.DTOs.Applications;
 using SchoolSystem.Backend.Extensions;
 using SchoolSystem.Backend.Services;
+using SchoolSystem.Domain.Entities;
 using SchoolSystem.Domain.Enums;
 
 namespace SchoolSystem.Backend.Controllers;
@@ -11,6 +13,12 @@ namespace SchoolSystem.Backend.Controllers;
 public class ApplicationsController(
     ApplicationService applicationService) : ControllerBase
 {
+    
+    [HttpGet("query")]
+    [Authorize]
+    [EnableQuery(PageSize = 100, MaxExpansionDepth = 3)]
+    public IQueryable<Application> Query() => applicationService.GetQueryable();
+    
     // POST /api/applications/{academicYearId}
     // Public — no auth. TenantId resolved from subdomain middleware.
     [HttpPost("{academicYearId:guid}")]

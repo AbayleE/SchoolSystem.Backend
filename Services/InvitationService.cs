@@ -18,11 +18,12 @@ public class InvitationService(
 {
     public async Task<Invitation> SendInvitationAsync(CreateInvitationDto dto, Guid tenantId, Guid senderUserId)
     {
+        var tenant = await context.Tenants.Where(tenant =>tenant.Name == dto.TenantName).FirstAsync() ?? throw new NotFoundException("Tenant not found");
         var sender = await context.Users.FindAsync(senderUserId)?? throw new NotFoundException("Sender not found");
        
         var existingActive = await context.Invitations
             .AnyAsync(i =>
-                i.TenantId == tenantId &&
+                i.TenantId == tenant.Id &&
                 i.Email == dto.Email &&
                 i.Role == dto.Role &&
                 !i.Used &&
@@ -33,7 +34,7 @@ public class InvitationService(
 
         var invitation = new Invitation
         {
-            TenantId = tenantId,
+            TenantId = tenant.Id,
             Email = dto.Email,
             Role = dto.Role,
             Token = Guid.NewGuid().ToString("N"),

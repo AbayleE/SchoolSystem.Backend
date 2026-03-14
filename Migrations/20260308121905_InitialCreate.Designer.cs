@@ -12,7 +12,7 @@ using SchoolSystem.Backend.Data;
 namespace SchoolSystem.Backend.Migrations
 {
     [DbContext(typeof(SchoolDbContext))]
-    [Migration("20260301221706_InitialCreate")]
+    [Migration("20260308121905_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -974,6 +974,9 @@ namespace SchoolSystem.Backend.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsSchool")
                         .HasColumnType("boolean");
 
                     b.Property<string>("LogoUrl")

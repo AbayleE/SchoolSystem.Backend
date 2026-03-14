@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OData.Query;
 using SchoolSystem.Backend.DTOs.Users;
 using SchoolSystem.Backend.Extensions;
 using SchoolSystem.Backend.Services;
@@ -14,6 +15,11 @@ namespace SchoolSystem.Backend.Controllers;
 [Route("api/[controller]")]
 public class UsersController(UserService userService) : ControllerBase
 {
+    [HttpGet("query")]
+    [Authorize]
+    [EnableQuery(PageSize = 100, MaxExpansionDepth = 3)]
+    public IQueryable<User> Query() => userService.GetQueryable();
+    
     // GET /api/users/profile — current user's own profile
     [Authorize]
     [HttpGet("profile")]
@@ -95,4 +101,14 @@ public class UsersController(UserService userService) : ControllerBase
         var user = await userService.CreateAdminUserAsync(dto);
         return CreatedAtAction(nameof(GetUser), new { id = user.Id }, user);
     }
+    
+    [Authorize(Roles = "SystemOwner")]
+    [HttpPost("bulk/users")]
+    public async Task<IActionResult> CreateBulkUsers([FromBody] List<CreateUserDto> dto)
+    {
+        var users = await userService.CreateUsersBulk(dto);
+
+        return Ok(users);
+    }
+    
 }

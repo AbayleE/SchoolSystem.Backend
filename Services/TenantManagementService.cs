@@ -2,12 +2,13 @@ using Microsoft.EntityFrameworkCore;
 using SchoolSystem.Backend.Data;
 using SchoolSystem.Backend.DTOs.Tenants;
 using SchoolSystem.Backend.Exceptions;
+using SchoolSystem.Backend.Services.BaseService;
 using SchoolSystem.Domain.Entities;
 using SchoolSystem.Domain.Enums;
 
 namespace SchoolSystem.Backend.Services;
 
-public class TenantManagementService(SchoolDbContext context, ILogger<TenantManagementService> logger)
+public class TenantManagementService(SchoolDbContext context,  BaseRepository<Tenant> repo,ILogger<TenantManagementService> logger): BaseService<Tenant>(repo)
 
 {
     public async Task<Tenant> CreateTenantAsync(CreateTenantDto dto)
@@ -25,9 +26,11 @@ public class TenantManagementService(SchoolDbContext context, ILogger<TenantMana
             LogoUrl = dto.LogoUrl,
             Status = TenantStatus.Active,
             CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            UpdatedAt = DateTime.UtcNow,
+            IsSchool = dto.IsSchool
+            
         };
-
+   
         context.Tenants.Add(tenant);
         await context.SaveChangesAsync();
 
@@ -51,4 +54,6 @@ public class TenantManagementService(SchoolDbContext context, ILogger<TenantMana
 
         logger.LogInformation("Tenant {TenantId} status set to {Status}", tenantId, status);
     }
+
+    public Task<List<Tenant>> GetTenantsAsync() => GetAllAsync();
 }

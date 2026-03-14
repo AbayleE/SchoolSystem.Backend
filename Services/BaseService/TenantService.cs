@@ -9,6 +9,7 @@ namespace SchoolSystem.Backend.Services.BaseService;
 public class TenantService<TEntity>(TenantRepository<TEntity> repo)
     where TEntity : class, IEntity, IHasTenant
 {
+    public IQueryable<TEntity> GetQueryable() => repo.GetQueryable();
     public Task<TEntity?> GetByIdAsync(Guid id) => repo.GetByIdAsync(id);
     public Task<List<TEntity>> GetAllAsync() => repo.GetAllAsync();
     public Task<TEntity> AddAsync(TEntity entity) => repo.AddAsync(entity);

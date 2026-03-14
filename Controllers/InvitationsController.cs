@@ -26,7 +26,7 @@ public class InvitationsController(InvitationService invitationService, ITenantC
             invitation.ExpiresAt
         });
     }
-    
+
     // GET /api/invitations — all invitations for this tenant
     [Authorize(Roles = "SystemOwner, SchoolAdmin, Manager")]
     [HttpGet]

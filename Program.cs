@@ -2,6 +2,7 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.OData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -35,11 +36,11 @@ builder.Services.AddCors(options =>
 // ---------------------------------------------------------
 // Health checks
 // ---------------------------------------------------------
-builder.Services.AddHealthChecks()
+/*builder.Services.AddHealthChecks()
     .AddNpgSql(
         builder.Configuration.GetConnectionString("DefaultConnection") ??
         throw new InvalidOperationException("ConnectionStrings:DefaultConnection is required"),
-        name: "database");
+        name: "database");*/
 
 // ---------------------------------------------------------
 // JWT Authentication
@@ -163,9 +164,17 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<PasswordHasher<User>>();
 
 // ---------------------------------------------------------
-// MVC
+// MVC + OData (global — all entities get $filter/$select/$orderby/$expand/$top/$skip/$count via /api/)
 // ---------------------------------------------------------
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddOData(opt => opt
+        .Select()
+        .Filter()
+        .OrderBy()
+        .Expand()
+        .Count()
+        .SetMaxTop(1000));
+
 builder.Services.AddEndpointsApiExplorer();
 
 var app = builder.Build();
@@ -215,6 +224,10 @@ app.UseCors();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+if (app.Environment.IsDevelopment())
+    app.UseODataRouteDebug(); // exposes /$odata route for debugging the EDM
+
 app.MapControllers();
 
 //app.MapHealthChecks("/health", new HealthCheckOptions { ResponseWriter = AspNetCore.HealthChecks.UI.Client.UIResponseWriter.WriteHealthCheckUIResponse });

@@ -12,7 +12,10 @@ public class BaseRepository<TEntity>(DbContext context)
 {
     private readonly DbSet<TEntity> _dbSet = context.Set<TEntity>();
     private readonly DbContext _context = context;
-
+    
+    public virtual IQueryable<TEntity> GetQueryable()
+        => _dbSet.Where(x => !x.IsDeleted);
+    
     public virtual Task<TEntity?> GetByIdAsync(Guid id)
     {
         return _dbSet

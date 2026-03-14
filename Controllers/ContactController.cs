@@ -1,8 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SchoolSystem.Backend.DTOs.Contact;
-using SchoolSystem.Backend.Extensions;
-using SchoolSystem.Backend.Interface;
 using SchoolSystem.Backend.Services;
 
 namespace SchoolSystem.Backend.Controllers;

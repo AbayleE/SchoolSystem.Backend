@@ -22,6 +22,13 @@ public class TenantRepository<TEntity>(DbContext context, ITenantContext tenant)
         if (tenant.TenantId == Guid.Empty)
             throw new InvalidOperationException("Tenant context is required for this operation.");
     }
+    
+    public override IQueryable<TEntity> GetQueryable()
+    {
+        EnsureTenant();
+        return _dbSet.Where(x => x.TenantId == tenant.TenantId && !x.IsDeleted);
+    }
+    
 
     public override Task<TEntity?> GetByIdAsync(Guid id)
     {

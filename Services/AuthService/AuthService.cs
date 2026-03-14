@@ -20,6 +20,7 @@ public class AuthService(
     SchoolDbContext context,
     ILogger<AuthService> logger,
     EmailService emailService,
+    UserService userService,
     PasswordHasher<User> passwordHasher) : IAuthService
 {
     public async Task<AuthResponseDto> LoginAsync(LoginDto dto)
@@ -64,7 +65,7 @@ public class AuthService(
         user.PasswordHash = passwordHasher.HashPassword(user, dto.Password);
         context.Users.Add(user);
         
-        CreateRoleProfile(user);
+        userService.CreateRoleProfile(user);
        
         invitation.Used = true;
         await context.SaveChangesAsync();
@@ -136,45 +137,6 @@ public class AuthService(
         logger.LogInformation("User {UserId} password updated", user.Id);
     }
     
-    private void CreateRoleProfile(User user)
-    {
-        switch (user.Role)
-        {
-            case UserRole.Teacher:
-                context.Teachers.Add(new Teacher
-                {
-                    TenantId = user.TenantId,
-                    UserId = user.Id,
-                    Status = TeacherStatus.Active
-                });
-                break;
-
-            case UserRole.Parent:
-                context.Parents.Add(new Parent
-                {
-                    TenantId = user.TenantId,
-                    UserId = user.Id
-                });
-                break;
-
-            case UserRole.Student:
-                var existingProfile = context.Students
-                    .FirstOrDefault(s =>
-                        s.TenantId == user.TenantId &&
-                        s.UserId == Guid.Empty);
-
-                if (existingProfile != null)
-                    existingProfile.UserId = user.Id;
-                else
-                    context.Students.Add(new Student
-                    {
-                        TenantId = user.TenantId,
-                        UserId = user.Id,
-                        Status = StudentStatus.Active
-                    });
-                break;
-        }
-    }
 
     private AuthResponseDto BuildAuthResponse(User user)
     {
